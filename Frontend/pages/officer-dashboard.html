@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Placement Officer Dashboard</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2 id="welcomeHeading">Welcome</h2>
+    <div class="dashboard-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-value" id="stat-total-students">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Placement-Ready Students</div>
+        <div class="stat-value" id="stat-ready-students">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Drives</div>
+        <div class="stat-value" id="stat-active-drives">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Applications</div>
+        <div class="stat-value" id="stat-applications">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Shortlisted Candidates</div>
+        <div class="stat-value" id="stat-shortlisted">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Selected Students</div>
+        <div class="stat-value" id="stat-selected">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Offers</div>
+        <div class="stat-value" id="stat-offers">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Placed Students</div>
+        <div class="stat-value" id="stat-placed">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending Joining</div>
+        <div class="stat-value" id="stat-pending-joining">—</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <p class="placeholder-note">
+        Detailed branch-wise and package analytics are on the Analytics page.
+      </p>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <h3>Predictive Analytics / At-Risk Students / Skill Analytics</h3>
+      <p class="placeholder-note">Reserved for the AI team's prediction and analytics models.</p>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["placement_officer"]);
+    if (user) {
+      renderShell(user, "officer-dashboard.html");
+      document.getElementById("welcomeHeading").textContent = `Welcome, ${user.name}`;
+      loadSummary();
+    }
+
+    async function loadSummary() {
+      try {
+        const res = await apiFetch("/api/analytics/officer/summary");
+        const d = res.data;
+        document.getElementById("stat-total-students").textContent = d.total_students;
+        document.getElementById("stat-ready-students").textContent = d.placement_ready_students;
+        document.getElementById("stat-active-drives").textContent = d.active_drives;
+        document.getElementById("stat-applications").textContent = d.total_applications;
+        document.getElementById("stat-shortlisted").textContent = d.shortlisted;
+        document.getElementById("stat-selected").textContent = d.selected_students;
+        document.getElementById("stat-offers").textContent = d.total_offers;
+        document.getElementById("stat-placed").textContent = d.placed_students;
+        document.getElementById("stat-pending-joining").textContent = d.pending_joining;
+      } catch (err) {
+        // Leave dashes on failure
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Analytics</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>Placement Analytics</h2>
+
+    <div class="dashboard-grid">
+      <div class="stat-card">
+        <div class="stat-label">Students Placed</div>
+        <div class="stat-value" id="stat-placement-count">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Placement %</div>
+        <div class="stat-value" id="stat-placement-pct">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Average Package</div>
+        <div class="stat-value" id="stat-avg-package">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Highest Package</div>
+        <div class="stat-value" id="stat-highest-package">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Applications per Drive</div>
+        <div class="stat-value" id="stat-apps-per-drive">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Selection Rate</div>
+        <div class="stat-value" id="stat-selection-rate">—</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <h3>Branch-wise Placements</h3>
+      <div id="branchStats">Loading...</div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <h3>Company-wise Hiring</h3>
+      <div id="companyStats">Loading...</div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <p class="placeholder-note">
+        Predictive analytics, at-risk student detection, and skill analytics are
+        reserved for the AI team's models.
+      </p>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["placement_officer"]);
+    if (user) {
+      renderShell(user, "officer-analytics.html");
+      loadAnalytics();
+    }
+
+    async function loadAnalytics() {
+      try {
+        const res = await apiFetch("/api/analytics/officer/placement-stats");
+        const d = res.data;
+
+        document.getElementById("stat-placement-count").textContent = d.placement_count;
+        document.getElementById("stat-placement-pct").textContent = `${d.placement_percentage}%`;
+        document.getElementById("stat-avg-package").textContent = `${d.average_package} LPA`;
+        document.getElementById("stat-highest-package").textContent = `${d.highest_package} LPA`;
+        document.getElementById("stat-apps-per-drive").textContent = d.applications_per_drive;
+        document.getElementById("stat-selection-rate").textContent = `${d.selection_rate}%`;
+
+        const branchEl = document.getElementById("branchStats");
+        const branchEntries = Object.entries(d.branch_wise_placements);
+        branchEl.innerHTML = branchEntries.length
+          ? branchEntries.map(([branch, count]) => `<p>${branch}: ${count}</p>`).join("")
+          : "<p>No placements recorded yet.</p>";
+
+        const companyEl = document.getElementById("companyStats");
+        const companyEntries = Object.entries(d.company_wise_hiring);
+        companyEl.innerHTML = companyEntries.length
+          ? companyEntries.map(([company, count]) => `<p>${company}: ${count}</p>`).join("")
+          : "<p>No hiring recorded yet.</p>";
+      } catch (err) {
+        document.getElementById("branchStats").textContent = "Failed to load: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>

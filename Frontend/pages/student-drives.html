@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Placement Drives</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>Placement Drives</h2>
+    <div class="card">
+      <div id="drivesList">Loading...</div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["student"]);
+    let appliedDriveIds = new Set();
+
+    if (user) {
+      renderShell(user, "student-drives.html");
+      init();
+    }
+
+    async function init() {
+      try {
+        const myApps = await apiFetch("/api/applications/mine");
+        appliedDriveIds = new Set(myApps.data.map((a) => a.drive_id));
+      } catch (err) {
+        // Non-fatal — just means "already applied" checks won't be shown
+      }
+      loadDrives();
+    }
+
+    async function loadDrives() {
+      const listEl = document.getElementById("drivesList");
+      try {
+        const res = await apiFetch("/api/drives/open");
+        const drives = res.data;
+
+        if (drives.length === 0) {
+          listEl.innerHTML = "<p>No open drives right now. Check back later.</p>";
+          return;
+        }
+
+        listEl.innerHTML = drives
+          .map((d) => {
+            const alreadyApplied = appliedDriveIds.has(d.id);
+            return `
+              <div class="drive-item" style="flex-direction: column; align-items: stretch;">
+                <div>
+                  <strong>${d.job_title}</strong> at ${d.company_name} — CTC ${d.ctc} LPA
+                  <br />
+                  <span style="color:#6b7280; font-size:0.85rem;">
+                    Deadline: ${d.application_deadline.slice(0, 10)} | Mode: ${d.mode} | Openings: ${d.openings}
+                  </span>
+                  <p style="margin: 6px 0;">${d.job_description}</p>
+                </div>
+                <div id="eligibility-${d.id}" class="auth-error"></div>
+                <div class="drive-actions" style="align-self: flex-end;">
+                  <button onclick="checkEligibility('${d.id}')">Check Eligibility</button>
+                  <button onclick="applyToDrive('${d.id}')" ${alreadyApplied ? "disabled" : ""}>
+                    ${alreadyApplied ? "Already Applied" : "Apply"}
+                  </button>
+                </div>
+              </div>`;
+          })
+          .join("");
+      } catch (err) {
+        listEl.textContent = "Failed to load drives: " + err.message;
+      }
+    }
+
+    async function checkEligibility(driveId) {
+      const el = document.getElementById(`eligibility-${driveId}`);
+      el.style.color = "#374151";
+      el.textContent = "Checking...";
+      try {
+        const res = await apiFetch(`/api/applications/check-eligibility/${driveId}`);
+        if (res.data.eligible) {
+          el.style.color = "#16a34a";
+          el.textContent = "You are eligible for this drive.";
+        } else {
+          el.style.color = "#dc2626";
+          el.textContent = "Not eligible: " + res.data.reasons.join("; ");
+        }
+      } catch (err) {
+        el.style.color = "#dc2626";
+        el.textContent = err.message;
+      }
+    }
+
+    async function applyToDrive(driveId) {
+      const el = document.getElementById(`eligibility-${driveId}`);
+      try {
+        await apiFetch(`/api/applications/apply/${driveId}`, { method: "POST" });
+        appliedDriveIds.add(driveId);
+        el.style.color = "#16a34a";
+        el.textContent = "Application submitted!";
+        loadDrives();
+      } catch (err) {
+        el.style.color = "#dc2626";
+        el.textContent = err.message;
+      }
+    }
+  </script>
+</body>
+</html>

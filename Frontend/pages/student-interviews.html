@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — My Interviews</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>My Interviews</h2>
+    <div class="card">
+      <div id="interviewsList">Loading...</div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["student"]);
+    if (user) {
+      renderShell(user, "student-interviews.html");
+      loadMyInterviews();
+    }
+
+    async function loadMyInterviews() {
+      const listEl = document.getElementById("interviewsList");
+      try {
+        const res = await apiFetch("/api/interviews/student/mine");
+        const interviews = res.data;
+
+        if (interviews.length === 0) {
+          listEl.innerHTML = "<p>No interviews scheduled yet.</p>";
+          return;
+        }
+
+        listEl.innerHTML = interviews
+          .map(
+            (i) => `
+            <div class="drive-item">
+              <div>
+                <strong>${i.company_name}</strong>
+                <br />
+                <span style="color:#6b7280; font-size:0.85rem;">
+                  ${i.date} | ${i.start_time}-${i.end_time} | ${i.mode}
+                  <br />
+                  ${i.mode === "online" ? "Link" : "Venue"}: ${i.venue_or_link}
+                </span>
+              </div>
+              <span class="badge">${i.status}</span>
+            </div>`
+          )
+          .join("");
+      } catch (err) {
+        listEl.textContent = "Failed to load interviews: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>

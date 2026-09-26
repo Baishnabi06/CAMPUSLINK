@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Applicants</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>Applicants</h2>
+
+    <div class="card">
+      <div class="form-group">
+        <label for="driveSelect">Select a Drive</label>
+        <select id="driveSelect"></select>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <div id="applicantsList">Select a drive to view applicants.</div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["recruiter"]);
+    if (user) {
+      renderShell(user, "recruiter-applicants.html");
+      loadDriveOptions();
+    }
+
+    async function loadDriveOptions() {
+      const select = document.getElementById("driveSelect");
+      try {
+        const res = await apiFetch("/api/drives/mine");
+        const drives = res.data;
+
+        if (drives.length === 0) {
+          select.innerHTML = "<option>No drives created yet</option>";
+          return;
+        }
+
+        select.innerHTML = drives
+          .map((d) => `<option value="${d.id}">${d.job_title} at ${d.company_name}</option>`)
+          .join("");
+
+        select.addEventListener("change", () => loadApplicants(select.value));
+        loadApplicants(select.value);
+      } catch

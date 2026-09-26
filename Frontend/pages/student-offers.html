@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — My Offers</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>My Offers</h2>
+    <div class="card">
+      <div id="offersList">Loading...</div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <h3>Post-Offer Documents</h3>
+      <form id="documentForm">
+        <div class="form-group">
+          <label for="document_type">Document Type</label>
+          <input type="text" id="document_type" placeholder="e.g. Offer Letter Copy, ID Proof, Marksheet" required />
+        </div>
+        <button type="submit">Submit Document</button>
+      </form>
+      <div id="documentsList" style="margin-top: 16px;">Loading...</div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["student"]);
+    if (user) {
+      renderShell(user, "student-offers.html");
+      loadMyOffers();
+      loadMyDocuments();
+    }
+
+    async function loadMyOffers() {
+      const listEl = document.getElementById("offersList");
+      try {
+        const res = await apiFetch("/api/offers/mine");
+        const offers = res.data;
+
+        if (offers.length === 0) {
+          listEl.innerHTML = "<p>No offers yet.</p>";
+          return;
+        }
+
+        listEl.innerHTML = offers
+          .map(
+            (o) => `
+            <div class="drive-item">
+              <div>
+                <strong>${o.job_title}</strong> at ${o.company_name}
+                <br />
+                <span style="color:#6b7280; font-size:0.85rem;">
+                  CTC ${o.ctc} LPA | Offer date: ${o.offer_date} | Joining date: ${o.joining_date}
+                </span>
+                <br />
+                <span class="badge">${o.status}</span>
+              </div>
+              ${
+                o.status === "offer_generated"
+                  ? `<div class="drive-actions">
+                       <button onclick="respond('${o.id}', 'accept')">Accept</button>
+                       <button onclick="respond('${o.id}', 'reject')" class="logout-btn">Reject</button>
+                     </div>`
+                  : ""
+              }
+            </div>`
+          )
+          .join("");
+      } catch (err) {
+        listEl.textContent = "Failed to load offers: " + err.message;
+      }
+    }
+
+    async function respond(offerId, response) {
+      try {
+        await apiFetch(`/api/offers/${offerId}/respond`, { method: "PATCH", body: { response } });
+        loadMyOffers();
+      } catch (err) {
+        alert("Failed to respond: " + err.message);
+      }
+    }
+
+    document.getElementById("documentForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const typeInput = document.getElementById("document_type");
+      try {
+        await apiFetch("/api/documents", { method: "POST", body: { document_type: typeInput.value } });
+        typeInput.value = "";
+        loadMyDocuments();
+      } catch (err) {
+        alert("Failed to submit: " + err.message);
+      }
+    });
+
+    async function loadMyDocuments() {
+      const listEl = document.getElementById("documentsList");
+      try {
+        const res = await apiFetch("/api/documents/mine");
+        const docs = res.data;
+
+        if (docs.length === 0) {
+          listEl.innerHTML = "<p>No documents submitted yet.</p>";
+          return;
+        }
+
+        listEl.innerHTML = docs
+          .map(
+            (d) => `
+            <div class="drive-item">
+              <div>
+                ${d.document_type}
+                <br />
+                <span style="color:#6b7280; font-size:0.85rem;">
+                  Submitted ${new Date(d.submitted_date).toLocaleDateString()}
+                  ${d.verified_date ? " | Verified " + new Date(d.verified_date).toLocaleDateString() : ""}
+                </span>
+              </div>
+              <span class="badge">${d.verification_status}</span>
+            </div>`
+          )
+          .join("");
+      } catch (err) {
+        listEl.textContent = "Failed to load documents: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>

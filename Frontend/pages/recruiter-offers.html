@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Offers</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>Generate an Offer</h2>
+    <div class="card">
+      <div class="form-group">
+        <label for="driveSelect">Drive</label>
+        <select id="driveSelect"></select>
+      </div>
+      <div class="form-group">
+        <label for="applicantSelect">Candidate</label>
+        <select id="applicantSelect"></select>
+      </div>
+      <form id="offerForm">
+        <div class="form-group">
+          <label for="ctc">CTC (LPA)</label>
+          <input type="number" id="ctc" step="0.1" required />
+        </div>
+        <div class="form-group">
+          <label for="offer_date">Offer Date</label>
+          <input type="date" id="offer_date" required />
+        </div>
+        <div class="form-group">
+          <label for="joining_date">Joining Date</label>
+          <input type="date" id="joining_date" required />
+        </div>
+        <div id="offerError" class="auth-error"></div>
+        <button type="submit">Generate Offer</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <h3>Offers Issued</h3>
+      <div id="offersList">Loading...</div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["recruiter"]);
+    if (user) {
+      renderShell(user, "recruiter-offers.html");
+      loadDriveOptions();
+      loadOffers();
+    }
+
+    async function loadDriveOptions() {
+      const select = document.getElementById("driveSelect");
+      try {
+        const res = await apiFetch("/api/drives/mine");
+        const drives = res.data;
+        if (drives.length === 0) {
+          select.innerHTML = "<option>No drives created yet</option>";
+          return;
+        }
+        select.innerHTML = drives
+          .map((d) => `<option value="${d.id}">${d.job_title} at ${d.company_name}</option>`)
+          .join("");
+        select.addEventListener("change", () => loadApplicantOptions(select.value));
+        loadApplicantOptions(select.value);
+      } catch (err) {
+        select.innerHTML = "<option>Failed to load drives</option>";
+      }
+    }
+
+    async function loadApplicantOptions(driveId) {
+      const select = document.getElementById("applicantSelect");
+      select.innerHTML = "<option>Loading...</option>";
+      try {
+        const res = await apiFetch(`/api/applications/drive/${driveId}`);
+        const candidates = res.data.filter((a) => a.status !== "rejected");
+        if (candidates.length === 0) {
+          select.innerHTML = "<option value=''>No eligible candidates</option>";
+          return;
+        }
+        select.innerHTML = candidates
+          .map((a) => `<option value="${a.id}">${a.student.name} (${a.status})</option>`)
+          .join("");
+      } catch (err) {
+        select.innerHTML = "<option>Failed to load candidates</option>";
+      }
+    }
+
+    document.getElementById("offerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById("offerError");
+      errorEl.textContent = "";
+
+      const payload = {
+        application_id: document.getElementById("applicantSelect").value,
+        ctc: parseFloat(document.getElementById("ctc").value),
+        offer_date: document.getElementById("offer_date").value,
+        joining_date: document.getElementById("joining_date").value,
+      };
+
+      if (!payload.application_id) {
+        errorEl.textContent = "Please select a candidate.";
+        return;
+      }
+
+      try {
+        await apiFetch("/api/offers", { method: "POST", body: payload });
+        document.getElementById("offerForm").reset();
+        loadOffers();
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    });
+
+    async function loadOffers() {
+      const listEl = document.getElementById("offersList");
+      try {
+        const res = await apiFetch("/api/offers/recruiter/mine");
+        const offers = res.data;
+
+        if (offers.length === 0) {
+          listEl.innerHTML = "<p>No offers issued yet.</p>";
+          return;
+        }
+
+        listEl.innerHTML = offers
+          .map(
+            (o) => `
+            <div class="drive-item">
+              <div>
+                <strong>${o.student_name}</strong> — ${o.job_title} at ${o.company_name}
+                <br />
+                <span style="color:#6b7280; font-size:0.85rem;">
+                  CTC ${o.ctc} LPA | Offer: ${o.offer_date} | Joining: ${o.joining_date}
+                </span>
+                <br />
+                <span class="badge">${o.status}</span>
+              </div>
+              <div class="drive-actions">
+                <select id="statusSelect-${o.id}">
+                  <option value="offer_withdrawn">Withdraw</option>
+                  <option value="joining_pending">Joining Pending</option>
+                  <option value="joined">Joined</option>
+                  <option value="did_not_join">Did Not Join</option>
+                </select>
+                <button onclick="updateOfferStatus('${o.id}')">Update</button>
+              </div>
+            </div>`
+          )
+          .join("");
+      } catch (err) {
+        listEl.textContent = "Failed to load offers: " + err.message;
+      }
+    }
+
+    async function updateOfferStatus(offerId) {
+      const status = document.getElementById(`statusSelect-${offerId}`).value;
+      try {
+        await apiFetch(`/api/offers/${offerId}/status`, { method: "PATCH", body: { status } });
+        loadOffers();
+      } catch (err) {
+        alert("Failed to update: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

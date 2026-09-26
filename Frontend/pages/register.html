@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Register</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <h2>Create your CampusLink account</h2>
+      <div id="authError" class="auth-error"></div>
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" minlength="8" required />
+        </div>
+        <div class="form-group">
+          <label for="role">I am a</label>
+          <select id="role">
+            <option value="student">Student</option>
+            <option value="recruiter">Recruiter</option>
+            <option value="placement_officer">Placement Officer</option>
+          </select>
+        </div>
+        <div class="form-group" id="branchGroup">
+          <label for="branch">Branch</label>
+          <input type="text" id="branch" placeholder="e.g. CSE" />
+        </div>
+        <div class="form-group" id="companyGroup">
+          <label for="company_name">Company Name</label>
+          <input type="text" id="company_name" />
+        </div>
+        <div class="form-group" id="departmentGroup">
+          <label for="department">Department</label>
+          <input type="text" id="department" placeholder="e.g. Training & Placement Cell" />
+        </div>
+        <button type="submit">Register</button>
+      </form>
+      <div class="auth-switch">
+        Already have an account? <a href="login.html">Login</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    initRegisterForm();
+  </script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Document Tracking</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>Document Tracking</h2>
+    <div class="card">
+      <div id="documentsList">Loading...</div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["placement_officer"]);
+    if (user) {
+      renderShell(user, "officer-documents.html");
+      loadAllDocuments();
+    }
+
+    async function loadAllDocuments() {
+      const listEl = document.getElementById("documentsList");
+      try {
+        const res = await apiFetch("/api/documents/all");
+        const docs = res.data;
+
+        if (docs.length === 0) {
+          listEl.innerHTML = "<p>No documents submitted yet.</p>";
+          return;
+        }
+
+        listEl.innerHTML = docs
+          .map(
+            (d) => `
+            <div class="drive-item">
+              <div>
+                <strong>${d.student_name}</strong> — ${d.document_type}
+                <br />
+                <span style="color:#6b7280; font-size:0.85rem;">
+                  Submitted ${new Date(d.submitted_date).toLocaleDateString()}
+                </span>
+                <br />
+                <span class="badge">${d.verification_status}</span>
+              </div>
+              ${
+                d.verification_status === "pending"
+                  ? `<div class="drive-actions">
+                       <button onclick="verify('${d.id}', 'verified')">Verify</button>
+                       <button onclick="verify('${d.id}', 'rejected')" class="logout-btn">Reject</button>
+                     </div>`
+                  : ""
+              }
+            </div>`
+          )
+          .join("");
+      } catch (err) {
+        listEl.textContent = "Failed to load documents: " + err.message;
+      }
+    }
+
+    async function verify(documentId, verification_status) {
+      try {
+        await apiFetch(`/api/documents/${documentId}/verify`, {
+          method: "PATCH",
+          body: { verification_status },
+        });
+        loadAllDocuments();
+      } catch (err) {
+        alert("Failed to update: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

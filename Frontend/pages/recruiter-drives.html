@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — My Drives</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>My Drives</h2>
+
+    <div class="card">
+      <h3 id="formTitle">Create a New Drive</h3>
+      <div id="driveError" class="auth-error"></div>
+      <form id="driveForm">
+        <div class="form-group">
+          <label for="company_name">Company Name</label>
+          <input type="text" id="company_name" required />
+        </div>
+        <div class="form-group">
+          <label for="job_title">Job Title</label>
+          <input type="text" id="job_title" required />
+        </div>
+        <div class="form-group">
+          <label for="job_description">Job Description</label>
+          <textarea id="job_description" rows="3" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="required_branches">Required Branches (comma-separated)</label>
+          <input type="text" id="required_branches" placeholder="e.g. CSE, IT, ECE" />
+        </div>
+        <div class="form-group">
+          <label for="min_cgpa">Minimum CGPA</label>
+          <input type="number" id="min_cgpa" step="0.01" min="0" max="10" value="0" />
+        </div>
+        <div class="form-group">
+          <label for="max_backlogs">Maximum Backlogs Allowed</label>
+          <input type="number" id="max_backlogs" min="0" value="0" />
+        </div>
+        <div class="form-group">
+          <label for="required_skills">Required Skills (comma-separated)</label>
+          <input type="text" id="required_skills" placeholder="e.g. Python, SQL" />
+        </div>
+        <div class="form-group">
+          <label for="required_certifications">Required Certifications (comma-separated)</label>
+          <input type="text" id="required_certifications" />
+        </div>
+        <div class="form-group">
+          <label for="ctc">CTC (LPA)</label>
+          <input type="number" id="ctc" step="0.1" required />
+        </div>
+        <div class="form-group">
+          <label for="openings">Number of Openings</label>
+          <input type="number" id="openings" min="1" value="1" />
+        </div>
+        <div class="form-group">
+          <label for="application_deadline">Application Deadline</label>
+          <input type="date" id="application_deadline" required />
+        </div>
+        <div class="form-group">
+          <label for="drive_date">Drive Date</label>
+          <input type="date" id="drive_date" required />
+        </div>
+        <div class="form-group">
+          <label for="location">Location</label>
+          <input type="text" id="location" />
+        </div>
+        <div class="form-group">
+          <label for="mode">Mode</label>
+          <select id="mode">
+            <option value="offline">Offline</option>
+            <option value="online">Online</option>
+            <option value="hybrid">Hybrid</option>
+          </select>
+        </div>
+        <button type="submit" id="submitBtn">Create Drive</button>
+        <button type="button" id="cancelEditBtn" style="display:none;">Cancel Edit</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <h3>Existing Drives</h3>
+      <div id="drivesList">Loading...</div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["recruiter"]);
+    let editingDriveId = null;
+
+    if (user) {
+      renderShell(user, "recruiter-drives.html");
+      loadDrives();
+    }
+
+    function toList(value) {
+      return value.split(",").map((v) => v.trim()).filter((v) => v.length > 0);
+    }
+
+    function readForm() {
+      return {
+        company_name: document.getElementById("company_name").value,
+        job_title: document.getElementById("job_title").value,
+        job_description: document.getElementById("job_description").value,
+        required_branches: toList(document.getElementById("required_branches").value),
+        min_cgpa: parseFloat(document.getElementById("min_cgpa").value) || 0,
+        max_backlogs: parseInt(document.getElementById("max_backlogs").value, 10) || 0,
+        required_skills: toList(document.getElementById("required_skills").value),
+        required_certifications: toList(document.getElementById("required_certifications").value),
+        ctc: parseFloat(document.getElementById("ctc").value),
+        openings: parseInt(document.getElementById("openings").value, 10) || 1,
+        application_deadline: document.getElementById("application_deadline").value,
+        drive_date: document.getElementById("drive_date").value,
+        location: document.getElementById("location").value || null,
+        mode: document.getElementById("mode").value,
+      };
+    }
+
+    function fillForm(drive) {
+      document.getElementById("company_name").value = drive.company_name;
+      document.getElementById("job_title").value = drive.job_title;
+      document.getElementById("job_description").value = drive.job_description;
+      document.getElementById("required_branches").value = (drive.required_branches || []).join(", ");
+      document.getElementById("min_cgpa").value = drive.min_cgpa;
+      document.getElementById("max_backlogs").value = drive.max_backlogs;
+      document.getElementById("required_skills").value = (drive.required_skills || []).join(", ");
+      document.getElementById("required_certifications").value = (drive.required_certifications || []).join(", ");
+      document.getElementById("ctc").value = drive.ctc;
+      document.getElementById("openings").value = drive.openings;
+      document.getElementById("application_deadline").value = drive.application_deadline.slice(0, 10);
+      document.getElementById("drive_date").value = drive.drive_date.slice(0, 10);
+      document.getElementById("location").value = drive.location || "";
+      document.getElementById("mode").value = drive.mode;
+    }
+
+    function resetForm() {
+      document.getElementById("driveForm").reset();
+      editingDriveId = null;
+      document.getElementById("formTitle").textContent = "Create a New Drive";
+      document.getElementById("submitBtn").textContent = "Create Drive";
+      document.getElementById("cancelEditBtn").style.display = "none";
+    }
+
+    document.getElementById("cancelEditBtn").addEventListener("click", resetForm);
+
+    document.getElementById("driveForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById("driveError");
+      errorEl.textContent = "";
+      const payload = readForm();
+
+      try {
+        if (editingDriveId) {
+          await apiFetch(`/api/drives/${editingDriveId}`, { method: "PUT", body: payload });
+        } else {
+          await apiFetch("/api/drives", { method: "POST", body: payload });
+        }
+        resetForm();
+        loadDrives();
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    });
+
+    async function loadDrives() {
+      const listEl = document.getElementById("drivesList");
+      try {
+        const res = await apiFetch("/api/drives/mine");
+        const drives = res.data;
+
+        if (drives.length === 0) {
+          listEl.innerHTML = "<p>You haven't created any drives yet.</p>";
+          return;
+        }
+
+        listEl.innerHTML = drives
+          .map(
+            (d) => `
+            <div class="drive-item">
+              <div>
+                <strong>${d.job_title}</strong> at ${d.company_name}
+                — CTC ${d.ctc} LPA — <span class="badge">${d.status}</span>
+              </div>
+              <div class="drive-actions">
+                <button onclick='editDrive(${JSON.stringify(d).replace(/'/g, "&apos;")})'>Edit</button>
+                <button onclick="deleteDrive('${d.id}')" class="logout-btn">Delete</button>
+              </div>
+            </div>`
+          )
+          .join("");
+      } catch (err) {
+        listEl.textContent = "Failed to load drives: " + err.message;
+      }
+    }
+
+    function editDrive(drive) {
+      fillForm(drive);
+      editingDriveId = drive.id;
+      document.getElementById("formTitle").textContent = "Edit Drive";
+      document.getElementById("submitBtn").textContent = "Update Drive";
+      document.getElementById("cancelEditBtn").style.display = "inline-block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function deleteDrive(id) {
+      if (!confirm("Delete this drive? This cannot be undone.")) return;
+      try {
+        await apiFetch(`/api/drives/${id}`, { method: "DELETE" });
+        loadDrives();
+      } catch (err) {
+        alert("Failed to delete: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

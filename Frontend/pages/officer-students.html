@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Manage Students</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>Manage Students</h2>
+    <div class="card">
+      <p>Student directory (branch, CGPA, skills, resume status, etc.) is built
+      in Stage 4.</p>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["placement_officer"]);
+    if (user) {
+      renderShell(user, "officer-students.html");
+    }
+  </script>
+</body>
+</html>

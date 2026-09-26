@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Interviews</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>Schedule an Interview</h2>
+    <div class="card">
+      <div class="form-group">
+        <label for="driveSelect">Drive</label>
+        <select id="driveSelect"></select>
+      </div>
+      <div class="form-group">
+        <label for="applicantSelect">Candidate</label>
+        <select id="applicantSelect"></select>
+      </div>
+
+      <form id="interviewForm">
+        <div class="form-group">
+          <label for="date">Date</label>
+          <input type="date" id="date" required />
+        </div>
+        <div class="form-group">
+          <label for="start_time">Start Time</label>
+          <input type="time" id="start_time" required />
+        </div>
+        <div class="form-group">
+          <label for="end_time">End Time</label>
+          <input type="time" id="end_time" required />
+        </div>
+        <div class="form-group">
+          <label for="mode">Mode</label>
+          <select id="mode">
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="venue_or_link">Venue / Meeting Link</label>
+          <input type="text" id="venue_or_link" required />
+        </div>
+        <div class="form-group">
+          <label for="panel">Interview Panel (comma-separated names)</label>
+          <input type="text" id="panel" placeholder="e.g. Anita Rao, Vikram Shah" />
+        </div>
+        <div id="conflictBox" style="display:none; margin-bottom: 12px;">
+          <div class="auth-error" id="conflictText"></div>
+          <button type="button" id="forceScheduleBtn">Schedule Anyway</button>
+        </div>
+        <div id="scheduleError" class="auth-error"></div>
+        <button type="submit" id="scheduleBtn">Schedule Interview</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <h3>Scheduled Interviews</h3>
+      <div id="interviewsList">Loading...</div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["recruiter"]);
+    let lastPayload = null;
+
+    if (user) {
+      renderShell(user, "recruiter-interviews.html");
+      loadDriveOptions();
+      loadScheduledInterviews();
+    }
+
+    async function loadDriveOptions() {
+      const select = document.getElementById("driveSelect");
+      try {
+        const res = await apiFetch("/api/drives/mine");
+        const drives = res.data;
+        if (drives.length === 0) {
+          select.innerHTML = "<option>No drives created yet</option>";
+          return;
+        }
+        select.innerHTML = drives
+          .map((d) => `<option value="${d.id}">${d.job_title} at ${d.company_name}</option>`)
+          .join("");
+        select.addEventListener("change", () => loadApplicantOptions(select.value));
+        loadApplicantOptions(select.value);
+      } catch (err) {
+        select.innerHTML = "<option>Failed to load drives</option>";
+      }
+    }
+
+    async function loadApplicantOptions(driveId) {
+      const select = document.getElementById("applicantSelect");
+      select.innerHTML = "<option>Loading...</option>";
+      try {
+        const res = await apiFetch(`/api/applications/drive/${driveId}`);
+        const eligible = res.data.filter((a) => a.status === "applied" || a.status === "shortlisted");
+        if (eligible.length === 0) {
+          select.innerHTML = "<option value=''>No applied/shortlisted candidates</option>";
+          return;
+        }
+        select.innerHTML = eligible
+          .map((a) => `<option value="${a.id}">${a.student.name} (${a.status})</option>`)
+          .join("");
+      } catch (err) {
+        select.innerHTML = "<option>Failed to load candidates</option>";
+      }
+    }
+
+    function readForm() {
+      return {
+        application_id: document.getElementById("applicantSelect").value,
+        date: document.getElementById("date").value,
+        start_time: document.getElementById("start_time").value,
+        end_time: document.getElementById("end_time").value,
+        mode: document.getElementById("mode").value,
+        venue_or_link: document.getElementById("venue_or_link").value,
+        panel: document
+          .getElementById("panel")
+          .value.split(",")
+          .map((p) => p.trim())
+          .filter((p) => p.length > 0),
+      };
+    }
+
+    async function submitSchedule(force) {
+      const errorEl = document.getElementById("scheduleError");
+      const conflictBox = document.getElementById("conflictBox");
+      errorEl.textContent = "";
+
+      const payload = { ...readForm(), force };
+      if (!payload.application_id) {
+        errorEl.textContent = "Please select a candidate.";
+        return;
+      }
+      lastPayload = payload;
+
+      try {
+        const res = await apiFetch("/api/interviews", { method: "POST", body: payload });
+        conflictBox.style.display = "none";
+        document.getElementById("interviewForm").reset();
+        loadScheduledInterviews();
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    }
+
+    document.getElementById("interviewForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById("scheduleError");
+      const conflictBox = document.getElementById("conflictBox");
+      const conflictText = document.getElementById("conflictText");
+      errorEl.textContent = "";
+      conflictBox.style.display = "none";
+
+      const payload = { ...readForm(), force: false };
+      if (!payload.application_id) {
+        errorEl.textContent = "Please select a candidate.";
+        return;
+      }
+      lastPayload = payload;
+
+      const response = await fetch(`${API_BASE_URL}/api/interviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+
+      if (data.success === false && data.data && data.data.conflicts) {
+        conflictText.textContent = "Conflicts: " + data.data.conflicts.join("; ");
+        conflictBox.style.display = "block";
+        return;
+      }
+
+      if (!response.ok || data.success === false) {
+        errorEl.textContent = data.message || "Failed to schedule interview";
+        return;
+      }
+
+      document.getElementById("interviewForm").reset();
+      conflictBox.style.display = "none";
+      loadScheduledInterviews();
+    });
+
+    document.getElementById("forceScheduleBtn").addEventListener("click", async () => {
+      await submitSchedule(true);
+    });
+
+    async function loadScheduledInterviews() {
+      const listEl = document.getElementById("interviewsList");
+      try {
+        const res = await apiFetch("/api/interviews/mine");
+        const interviews = res.data;
+
+        if (interviews.length === 0) {
+          listEl.innerHTML = "<p>No interviews scheduled yet.</p>";
+          return;
+        }
+
+        listEl.innerHTML = interviews
+          .map(
+            (i) => `
+            <div class="drive-item">
+              <div>
+                <strong>${i.student_name}</strong> — ${i.company_name}
+                <br />
+                <span style="color:#6b7280; font-size:0.85rem;">
+                  ${i.date} | ${i.start_time}-${i.end_time} | ${i.mode} | ${i.venue_or_link}
+                  ${i.has_conflict ? " | ⚠ Scheduled with a conflict" : ""}
+                </span>
+                <br />
+                <span class="badge">${i.status}</span>
+              </div>
+              <div class="drive-actions">
+                <button onclick="markStatus('${i.id}', 'completed')">Mark Completed</button>
+                <button onclick="markStatus('${i.id}', 'cancelled')" class="logout-btn">Cancel</button>
+              </div>
+            </div>`
+          )
+          .join("");
+      } catch (err) {
+        listEl.textContent = "Failed to load interviews: " + err.message;
+      }
+    }
+
+    async function markStatus(interviewId, status) {
+      try {
+        await apiFetch(`/api/interviews/${interviewId}/status`, {
+          method: "PATCH",
+          body: { status },
+        });
+        loadScheduledInterviews();
+      } catch (err) {
+        alert("Failed to update: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

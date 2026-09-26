@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Student Dashboard</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2 id="welcomeHeading">Welcome</h2>
+    <div class="dashboard-grid">
+      <div class="stat-card">
+        <div class="stat-label">Profile Completion</div>
+        <div class="stat-value" id="stat-profile">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Available Drives</div>
+        <div class="stat-value" id="stat-drives">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Applications</div>
+        <div class="stat-value" id="stat-applications">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Upcoming Interviews</div>
+        <div class="stat-value" id="stat-interviews">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Offers</div>
+        <div class="stat-value" id="stat-offers">—</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <h3>AI Readiness Score</h3>
+      <p class="placeholder-note">Reserved for the AI team's readiness scoring model.</p>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <h3>Skill Gap Analysis</h3>
+      <p class="placeholder-note">Reserved for the AI team's skill-gap analysis model.</p>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <h3>Recommended Jobs/Roles</h3>
+      <p class="placeholder-note">Reserved for the AI team's recommendation engine.</p>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["student"]);
+    if (user) {
+      renderShell(user, "student-dashboard.html");
+      document.getElementById("welcomeHeading").textContent = `Welcome, ${user.name}`;
+      loadSummary();
+    }
+
+    async function loadSummary() {
+      try {
+        const res = await apiFetch("/api/analytics/student/summary");
+        const d = res.data;
+        document.getElementById("stat-profile").textContent = d.profile_completed ? "Complete" : "Incomplete";
+        document.getElementById("stat-drives").textContent = d.available_drives;
+        document.getElementById("stat-applications").textContent = d.my_applications;
+        document.getElementById("stat-interviews").textContent = d.upcoming_interviews;
+        document.getElementById("stat-offers").textContent = d.my_offers;
+      } catch (err) {
+        // Leave dashes on failure
+      }
+    }
+  </script>
+</body>
+</html>

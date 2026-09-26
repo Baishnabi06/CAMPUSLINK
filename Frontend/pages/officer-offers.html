@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Manage Offers</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>All Offers</h2>
+    <div class="card">
+      <div id="offersList">Loading...</div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["placement_officer"]);
+    if (user) {
+      renderShell(user, "officer-offers.html");
+      loadAllOffers();
+    }
+
+    async function loadAllOffers() {
+      const listEl = document.getElementById("offersList");
+      try {
+        const res = await apiFetch("/api/offers/all");
+        const offers = res.data;
+
+        if (offers.length === 0) {
+          listEl.innerHTML = "<p>No offers in the system yet.</p>";
+          return;
+        }
+
+        listEl.innerHTML = offers
+          .map(
+            (o) => `
+            <div class="drive-item">
+              <div>
+                <strong>${o.student_name}</strong> — ${o.job_title} at ${o.company_name}
+                <br />
+                <span style="color:#6b7280; font-size:0.85rem;">
+                  CTC ${o.ctc} LPA | Offer: ${o.offer_date} | Joining: ${o.joining_date}
+                </span>
+              </div>
+              <span class="badge">${o.status}</span>
+            </div>`
+          )
+          .join("");
+      } catch (err) {
+        listEl.textContent = "Failed to load offers: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>

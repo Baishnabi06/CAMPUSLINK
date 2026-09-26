@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Recruiter Dashboard</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2 id="welcomeHeading">Welcome</h2>
+    <div class="dashboard-grid">
+      <div class="stat-card">
+        <div class="stat-label">Active Drives</div>
+        <div class="stat-value" id="stat-active-drives">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Applications</div>
+        <div class="stat-value" id="stat-applications">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Shortlisted</div>
+        <div class="stat-value" id="stat-shortlisted">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Interviews</div>
+        <div class="stat-value" id="stat-interviews">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Offers</div>
+        <div class="stat-value" id="stat-offers">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Hired</div>
+        <div class="stat-value" id="stat-hired">—</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <h3>AI Candidate Matching</h3>
+      <p class="placeholder-note">Reserved for the AI team's recruiter–student matching model.</p>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <h3>Candidate Fit Score</h3>
+      <p class="placeholder-note">Reserved for the AI team's fit-scoring model.</p>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+      <h3>AI Recommendations</h3>
+      <p class="placeholder-note">Reserved for the AI team's recommendation engine.</p>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["recruiter"]);
+    if (user) {
+      renderShell(user, "recruiter-dashboard.html");
+      document.getElementById("welcomeHeading").textContent = `Welcome, ${user.name}`;
+      loadSummary();
+    }
+
+    async function loadSummary() {
+      try {
+        const res = await apiFetch("/api/analytics/recruiter/summary");
+        const d = res.data;
+        document.getElementById("stat-active-drives").textContent = `${d.active_drives} / ${d.total_drives}`;
+        document.getElementById("stat-applications").textContent = d.applications;
+        document.getElementById("stat-shortlisted").textContent = d.shortlisted;
+        document.getElementById("stat-interviews").textContent = d.interviews;
+        document.getElementById("stat-offers").textContent = d.offers;
+        document.getElementById("stat-hired").textContent = d.hired;
+      } catch (err) {
+        // Leave dashes on failure
+      }
+    }
+  </script>
+</body>
+</html>

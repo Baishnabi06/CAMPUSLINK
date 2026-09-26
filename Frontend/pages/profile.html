@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Profile</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>My Profile</h2>
+
+    <div class="card" id="identityCard">Loading...</div>
+
+    <div id="studentSection" style="display: none; margin-top: 20px;">
+      <div class="card">
+        <h3>Academic Details</h3>
+        <div id="profileError" class="auth-error"></div>
+        <form id="studentProfileForm">
+          <div class="form-group">
+            <label for="branch">Branch</label>
+            <input type="text" id="branch" />
+          </div>
+          <div class="form-group">
+            <label for="cgpa">CGPA</label>
+            <input type="number" id="cgpa" step="0.01" min="0" max="10" />
+          </div>
+          <div class="form-group">
+            <label for="backlogs">Backlogs</label>
+            <input type="number" id="backlogs" min="0" />
+          </div>
+          <div class="form-group">
+            <label for="skills">Skills (comma-separated)</label>
+            <input type="text" id="skills" placeholder="e.g. Python, React, SQL" />
+          </div>
+          <div class="form-group">
+            <label for="certifications">Certifications (comma-separated)</label>
+            <input type="text" id="certifications" placeholder="e.g. AWS Cloud Practitioner" />
+          </div>
+          <div class="form-group">
+            <label for="projects">Projects (comma-separated)</label>
+            <input type="text" id="projects" placeholder="e.g. Library Management System" />
+          </div>
+          <button type="submit">Save Profile</button>
+          <span id="saveStatus" style="margin-left: 10px; color: #16a34a;"></span>
+        </form>
+      </div>
+
+      <div class="card" style="margin-top: 20px;">
+        <h3>Resume</h3>
+        <p id="currentResume">No resume uploaded yet.</p>
+        <input type="file" id="resumeFile" accept="application/pdf" />
+        <button id="uploadResumeBtn">Upload Resume (PDF)</button>
+        <span id="resumeStatus" style="margin-left: 10px;"></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth([]);
+    if (user) {
+      renderShell(user, "profile.html");
+
+      document.getElementById("identityCard").innerHTML = `
+        <p><strong>Name:</strong> ${user.name}</p>
+        <p><strong>Email:</strong> ${user.email}</p>
+        <p><strong>Role:</strong> ${user.role.replace("_", " ")}</p>
+      `;
+
+      if (user.role === "student") {
+        document.getElementById("studentSection").style.display = "block";
+        loadStudentProfile();
+      }
+    }
+
+    async function loadStudentProfile() {
+      try {
+        const res = await apiFetch("/api/students/me");
+        const s = res.data;
+        document.getElementById("branch").value = s.branch || "";
+        document.getElementById("cgpa").value = s.cgpa ?? "";
+        document.getElementById("backlogs").value = s.backlogs ?? 0;
+        document.getElementById("skills").value = (s.skills || []).join(", ");
+        document.getElementById("certifications").value = (s.certifications || []).join(", ");
+        document.getElementById("projects").value = (s.projects || []).join(", ");
+
+        if (s.resume_url) {
+          document.getElementById("currentResume").innerHTML =
+            `Current resume: <a href="${API_BASE_URL}${s.resume_url}" target="_blank">View PDF</a>`;
+        }
+      } catch (err) {
+        document.getElementById("profileError").textContent = err.message;
+      }
+    }
+
+    function toList(value) {
+      return value
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+    }
+
+    document.getElementById("studentProfileForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById("profileError");
+      const statusEl = document.getElementById("saveStatus");
+      errorEl.textContent = "";
+      statusEl.textContent = "";
+
+      const payload = {
+        branch: document.getElementById("branch").value || null,
+        cgpa: document.getElementById("cgpa").value
+          ? parseFloat(document.getElementById("cgpa").value)
+          : null,
+        backlogs: document.getElementById("backlogs").value
+          ? parseInt(document.getElementById("backlogs").value, 10)
+          : null,
+        skills: toList(document.getElementById("skills").value),
+        certifications: toList(document.getElementById("certifications").value),
+        projects: toList(document.getElementById("projects").value),
+      };
+
+      try {
+        await apiFetch("/api/students/me", { method: "PUT", body: payload });
+        statusEl.textContent = "Saved!";
+        setTimeout(() => (statusEl.textContent = ""), 2000);
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    });
+
+    document.getElementById("uploadResumeBtn").addEventListener("click", async () => {
+      const statusEl = document.getElementById("resumeStatus");
+      const fileInput = document.getElementById("resumeFile");
+      if (!fileInput.files.length) {
+        statusEl.textContent = "Choose a PDF file first.";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      statusEl.textContent = "Uploading...";
+      try {
+        const res = await apiUpload("/api/students/me/resume", formData);
+        statusEl.textContent = "Uploaded!";
+        document.getElementById("currentResume").innerHTML =
+          `Current resume: <a href="${API_BASE_URL}${res.data.resume_url}" target="_blank">View PDF</a>`;
+      } catch (err) {
+        statusEl.textContent = "Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

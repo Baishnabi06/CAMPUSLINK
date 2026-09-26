@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CampusLink — Company Profile</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>Company Profile</h2>
+    <div class="card">
+      <div id="profileError" class="auth-error"></div>
+      <form id="companyForm">
+        <div class="form-group">
+          <label for="company_name">Company Name</label>
+          <input type="text" id="company_name" required />
+        </div>
+        <div class="form-group">
+          <label for="designation">Your Designation</label>
+          <input type="text" id="designation" placeholder="e.g. HR Manager" />
+        </div>
+        <div class="form-group">
+          <label for="company_details">Company Details</label>
+          <textarea id="company_details" rows="4" placeholder="Brief description of the company"></textarea>
+        </div>
+        <button type="submit">Save</button>
+        <span id="saveStatus" style="margin-left: 10px; color: #16a34a;"></span>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["recruiter"]);
+    if (user) {
+      renderShell(user, "recruiter-company-profile.html");
+      loadProfile();
+    }
+
+    async function loadProfile() {
+      try {
+        const res = await apiFetch("/api/recruiters/me");
+        const r = res.data;
+        document.getElementById("company_name").value = r.company_name || "";
+        document.getElementById("designation").value = r.designation || "";
+        document.getElementById("company_details").value = r.company_details || "";
+      } catch (err) {
+        document.getElementById("profileError").textContent = err.message;
+      }
+    }
+
+    document.getElementById("companyForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById("profileError");
+      const statusEl = document.getElementById("saveStatus");
+      errorEl.textContent = "";
+      statusEl.textContent = "";
+
+      const payload = {
+        company_name: document.getElementById("company_name").value,
+        designation: document.getElementById("designation").value || null,
+        company_details: document.getElementById("company_details").value || null,
+      };
+
+      try {
+        await apiFetch("/api/recruiters/me", { method: "PUT", body: payload });
+        statusEl.textContent = "Saved!";
+        setTimeout(() => (statusEl.textContent = ""), 2000);
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>
