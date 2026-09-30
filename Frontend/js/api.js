@@ -1,7 +1,16 @@
-const API_BASE_URL = "http://127.0.0.1:8001";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 const TOKEN_KEY = "campuslink_token";
 const USER_KEY = "campuslink_user";
+
+// Routes used before the user is logged in. A 401 from these means "wrong
+// credentials", not "expired session", so we must not redirect/reload.
+const PUBLIC_AUTH_PATHS = [
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/request-otp",
+  "/api/auth/verify-otp",
+];
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY);
@@ -40,7 +49,7 @@ async function apiFetch(path, options = {}) {
 
   const response = await fetch(`${API_BASE_URL}${path}`, config);
 
-  if (response.status === 401) {
+  if (response.status === 401 && !PUBLIC_AUTH_PATHS.includes(path)) {
     clearAuth();
     window.location.href = "login.html";
     return;

@@ -11,6 +11,15 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://127.0.0.1:5500"
 
+    # Email (SMTP) settings used to send OTP login codes.
+    # Defaults let the app start even if SMTP isn't configured yet.
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    otp_expire_minutes: int = 5
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @property

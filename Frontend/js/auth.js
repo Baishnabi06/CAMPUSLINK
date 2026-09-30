@@ -62,6 +62,79 @@ function initLoginForm() {
   });
 }
 
+/**
+ * Email-code (OTP) login. Works alongside the password form: the login page
+ * has two tabs, and this wires up the "Email code" tab.
+ * Step 1: user enters email -> we request a code.
+ * Step 2: user enters the 6-digit code -> we verify it and log them in.
+ */
+function initOtpLogin() {
+  const passwordForm = document.getElementById("loginForm");
+  const otpForm = document.getElementById("otpForm");
+  if (!passwordForm || !otpForm) return;
+
+  const tabPassword = document.getElementById("tabPassword");
+  const tabOtp = document.getElementById("tabOtp");
+  const emailStep = document.getElementById("otpEmailStep");
+  const codeStep = document.getElementById("otpCodeStep");
+  const errorEl = document.getElementById("authError");
+  const infoEl = document.getElementById("authInfo");
+
+  function showTab(which) {
+    const isOtp = which === "otp";
+    passwordForm.hidden = isOtp;
+    otpForm.hidden = !isOtp;
+    tabPassword.classList.toggle("active", !isOtp);
+    tabOtp.classList.toggle("active", isOtp);
+    errorEl.textContent = "";
+    if (infoEl) infoEl.textContent = "";
+  }
+  tabPassword.addEventListener("click", () => showTab("password"));
+  tabOtp.addEventListener("click", () => showTab("otp"));
+
+  async function sendCode() {
+    const email = document.getElementById("otpEmail").value.trim();
+    const result = await apiFetch("/api/auth/request-otp", {
+      method: "POST",
+      body: { email },
+    });
+    emailStep.hidden = true;
+    codeStep.hidden = false;
+    if (infoEl) infoEl.textContent = result.message;
+    document.getElementById("otpCode").focus();
+  }
+
+  otpForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl.textContent = "";
+    try {
+      if (codeStep.hidden) {
+        await sendCode();
+      } else {
+        const email = document.getElementById("otpEmail").value.trim();
+        const otp = document.getElementById("otpCode").value.trim();
+        const result = await apiFetch("/api/auth/verify-otp", {
+          method: "POST",
+          body: { email, otp },
+        });
+        setAuth(result.data.access_token, result.data.user);
+        goToDashboard(result.data.user.role);
+      }
+    } catch (err) {
+      errorEl.textContent = err.message;
+    }
+  });
+
+  document.getElementById("resendOtpBtn").addEventListener("click", async () => {
+    errorEl.textContent = "";
+    try {
+      await sendCode();
+    } catch (err) {
+      errorEl.textContent = err.message;
+    }
+  });
+}
+
 function initRegisterForm() {
   const form = document.getElementById("registerForm");
   if (!form) return;

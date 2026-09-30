@@ -1,14 +1,25 @@
-from datetime import datetime, timezone
+import hmac
+import logging
+import re
+from datetime import datetime, timedelta, timezone
 
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel, EmailStr
 
+from app.config import settings
 from app.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.deps import get_current_user
+from app.core.otp import generate_otp, hash_otp, send_otp_email
 from app.models.schemas import UserRegister, UserLogin, UserOut, Token, UserRole
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+MAX_OTP_ATTEMPTS = 5
+RESEND_COOLDOWN_SECONDS = 60
 
 
 def user_to_out(user: dict) -> dict:
@@ -19,6 +30,22 @@ def user_to_out(user: dict) -> dict:
         "role": user["role"],
         "is_active": user.get("is_active", True),
         "created_at": user["created_at"],
+    }
+
+
+def login_response(user: dict) -> dict:
+    """Same response shape as the password login, so the frontend treats both alike."""
+    access_token = create_access_token(
+        data={"sub": str(user["_id"]), "role": user["role"]}
+    )
+    return {
+        "success": True,
+        "message": "Login successful",
+        "data": {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": user_to_out(user),
+        },
     }
 
 
@@ -96,20 +123,103 @@ async def login(payload: UserLogin):
     if not user.get("is_active", True):
         raise HTTPException(status_code=403, detail="Account is deactivated")
 
-    access_token = create_access_token(
-        data={"sub": str(user["_id"]), "role": user["role"]}
+    return login_response(user)
+
+
+# ---------------------------------------------------------------------------
+# OTP (email code) login
+# ---------------------------------------------------------------------------
+
+class OtpRequest(BaseModel):
+    email: EmailStr
+
+
+class OtpVerify(BaseModel):
+    email: EmailStr
+    otp: str
+
+
+def _aware(dt: datetime) -> datetime:
+    # Mongo returns naive datetimes by default
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+async def find_user_by_email(db, email: str):
+    # register stores the email as typed, so match case-insensitively
+    return await db.users.find_one(
+        {"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}}
     )
 
-    return {
+
+@router.post("/request-otp")
+async def request_otp(payload: OtpRequest):
+    db = get_db()
+    email = payload.email.lower().strip()
+    now = datetime.now(timezone.utc)
+    generic = {
         "success": True,
-        "message": "Login successful",
-        "data": {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": user_to_out(user),
-        },
+        "message": "If that email is registered, a code has been sent.",
+        "data": {},
     }
 
+    # Within the cooldown, do nothing; the previous code is still valid.
+    existing = await db.otps.find_one({"email": email})
+    if existing and (now - _aware(existing["created_at"])).total_seconds() < RESEND_COOLDOWN_SECONDS:
+        return generic
+
+    user = await find_user_by_email(db, email)
+    if not user or not user.get("is_active", True):
+        return generic  # same response, so nobody can probe which emails exist
+
+    otp = generate_otp()
+    await db.otps.replace_one(
+        {"email": email},
+        {
+            "email": email,
+            "otp_hash": hash_otp(email, otp),
+            "attempts": 0,
+            "created_at": now,
+            "expires_at": now + timedelta(minutes=settings.otp_expire_minutes),
+        },
+        upsert=True,
+    )
+
+    try:
+        await run_in_threadpool(send_otp_email, email, otp)  # SMTP is blocking
+    except Exception:
+        # Shown in this terminal only. If emails don't arrive, look here.
+        logger.exception("Failed to send OTP email")
+
+    return generic
+
+
+@router.post("/verify-otp")
+async def verify_otp(payload: OtpVerify):
+    db = get_db()
+    email = payload.email.lower().strip()
+    record = await db.otps.find_one({"email": email})
+
+    if not record or _aware(record["expires_at"]) < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Code expired or invalid. Request a new one.")
+
+    if record["attempts"] >= MAX_OTP_ATTEMPTS:
+        await db.otps.delete_one({"email": email})
+        raise HTTPException(status_code=400, detail="Too many attempts. Request a new code.")
+
+    if not hmac.compare_digest(record["otp_hash"], hash_otp(email, payload.otp.strip())):
+        await db.otps.update_one({"email": email}, {"$inc": {"attempts": 1}})
+        raise HTTPException(status_code=400, detail="Incorrect code.")
+
+    await db.otps.delete_one({"email": email})  # single use
+
+    user = await find_user_by_email(db, email)
+    if not user or not user.get("is_active", True):
+        raise HTTPException(status_code=400, detail="Invalid request.")
+
+    return login_response(user)
+
+
+# ---------------------------------------------------------------------------
 
 @router.get("/me")
 async def get_me(current_user: dict = Depends(get_current_user)):

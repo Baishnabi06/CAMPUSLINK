@@ -10,7 +10,16 @@
   <div class="auth-page">
     <div class="auth-card">
       <h2>Login to CampusLink</h2>
+
+      <div class="auth-tabs">
+        <button type="button" id="tabPassword" class="tab active">Password</button>
+        <button type="button" id="tabOtp" class="tab">Email code</button>
+      </div>
+
       <div id="authError" class="auth-error"></div>
+      <div id="authInfo" class="auth-info"></div>
+
+      <!-- Tab 1: password login (unchanged) -->
       <form id="loginForm">
         <div class="form-group">
           <label for="email">Email</label>
@@ -22,6 +31,28 @@
         </div>
         <button type="submit">Login</button>
       </form>
+
+      <!-- Tab 2: email code (OTP) login -->
+      <form id="otpForm" hidden>
+        <div id="otpEmailStep">
+          <div class="form-group">
+            <label for="otpEmail">Email</label>
+            <input type="email" id="otpEmail" required />
+          </div>
+          <button type="submit">Send code</button>
+        </div>
+
+        <div id="otpCodeStep" hidden>
+          <div class="form-group">
+            <label for="otpCode">6-digit code</label>
+            <input type="text" id="otpCode" inputmode="numeric" maxlength="6"
+                   autocomplete="one-time-code" />
+          </div>
+          <button type="submit">Verify and log in</button>
+          <button type="button" id="resendOtpBtn">Resend code</button>
+        </div>
+      </form>
+
       <div class="auth-switch">
         Don't have an account? <a href="register.html">Register</a>
       </div>
@@ -32,6 +63,7 @@
   <script src="../js/auth.js"></script>
   <script>
     initLoginForm();
+    initOtpLogin();
   </script>
 </body>
 </html>

@@ -1,9 +1,11 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.database import connect_to_mongo, close_mongo_connection
+from app.database import connect_to_mongo, close_mongo_connection, get_db
 from app.routes import (
     health,
     auth,
@@ -18,6 +20,8 @@ from app.routes import (
     notifications,
     analytics,
 )
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="CampusLink API", version="0.1.0")
 
@@ -48,6 +52,14 @@ app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"]
 @app.on_event("startup")
 async def on_startup():
     await connect_to_mongo()
+
+    # Indexes for the OTP login codes. A failure here shouldn't stop the app.
+    try:
+        otps = get_db().otps
+        await otps.create_index("expires_at", expireAfterSeconds=0)  # auto-delete expired codes
+        await otps.create_index("email", unique=True)
+    except Exception:
+        logger.exception("Could not create OTP indexes")
 
 
 @app.on_event("shutdown")
