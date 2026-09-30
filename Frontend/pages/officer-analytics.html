@@ -2,55 +2,505 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CampusLink — Analytics</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
+
+  <!-- Styles for this page only (all classes start with "an-") -->
+  <style>
+    .an-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .an-title {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #111827;
+    }
+
+    .an-sub {
+      margin: 4px 0 0;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+
+    .an-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .an-btn {
+      margin: 0;
+      padding: 8px 14px;
+      border: 1px solid #2563eb;
+      border-radius: 8px;
+      background: #2563eb;
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .an-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .an-btn-ghost {
+      border-color: #d1d5db;
+      background: #fff;
+      color: #1f2937;
+    }
+
+    .an-btn-ghost:hover {
+      background: #f3f4f6;
+    }
+
+    .an-btn:focus-visible {
+      outline: 3px solid #93b4ff;
+      outline-offset: 2px;
+    }
+
+    /* error banner */
+    .an-error {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      background: #fef2f2;
+      font-size: 0.9rem;
+      color: #991b1b;
+    }
+
+    .an-error.show {
+      display: flex;
+    }
+
+    /* KPI cards */
+    .an-kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .an-kpi,
+    .an-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+    }
+
+    .an-kpi {
+      padding: 18px;
+    }
+
+    .an-kpi-icon {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+    }
+
+    .an-kpi-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .an-kpi-label {
+      margin-top: 14px;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .an-kpi-value {
+      margin-top: 2px;
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #111827;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .an-c-green  { background: #dcfce7; color: #15803d; }
+    .an-c-blue   { background: #dbeafe; color: #1d4ed8; }
+    .an-c-indigo { background: #e0e7ff; color: #4338ca; }
+    .an-c-amber  { background: #fef3c7; color: #b45309; }
+    .an-c-sky    { background: #e0f2fe; color: #0369a1; }
+    .an-c-teal   { background: #ccfbf1; color: #0f766e; }
+
+    /* chart cards */
+    .an-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .an-span-5 { grid-column: span 5; }
+    .an-span-7 { grid-column: span 7; }
+
+    .an-card {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding: 20px;
+    }
+
+    .an-card h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .an-card-sub {
+      margin: 2px 0 18px;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .an-card-body {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .an-insight {
+      margin: 14px 0 0;
+      padding-top: 12px;
+      border-top: 1px solid #f0f2f6;
+      font-size: 0.88rem;
+      color: #374151;
+    }
+
+    .an-insight:empty {
+      display: none;
+    }
+
+    /* ring gauges */
+    .an-rings {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      gap: 16px;
+    }
+
+    .an-ring {
+      text-align: center;
+    }
+
+    .an-ring-fg {
+      transition: stroke-dashoffset 1s cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+
+    .an-ring-val {
+      font-size: 26px;
+      font-weight: 700;
+      fill: #111827;
+    }
+
+    .an-ring-label {
+      margin-top: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    /* horizontal bars (package comparison) */
+    .an-hrow {
+      margin-bottom: 20px;
+    }
+
+    .an-hrow-top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: #374151;
+    }
+
+    .an-hrow-top strong {
+      color: #111827;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .an-htrack {
+      height: 12px;
+      border-radius: 999px;
+      background: #eef1f6;
+      overflow: hidden;
+    }
+
+    .an-hbar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+
+    /* branch column chart */
+    .an-scroll {
+      overflow-x: auto;
+    }
+
+    .an-scroll svg {
+      display: block;
+    }
+
+    .an-col {
+      transform-box: fill-box;
+      transform-origin: 50% 100%;
+      animation: an-grow 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+
+    .an-col:hover {
+      filter: brightness(1.12);
+    }
+
+    @keyframes an-grow {
+      from { transform: scaleY(0); }
+    }
+
+    .an-axis { font-size: 11px; fill: #6b7280; }
+    .an-val  { font-size: 12px; font-weight: 700; fill: #111827; }
+    .an-xlab { font-size: 12px; fill: #374151; }
+
+    /* company donut + legend */
+    .an-donut-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .an-donut-val { font-size: 30px; font-weight: 700; fill: #111827; }
+    .an-donut-cap { font-size: 12px; fill: #6b7280; }
+
+    .an-legend {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .an-legend li {
+      display: grid;
+      grid-template-columns: 12px minmax(0, 1fr) auto 48px;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f2f6;
+      font-size: 0.9rem;
+    }
+
+    .an-legend li:last-child {
+      border-bottom: 0;
+    }
+
+    .an-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+    }
+
+    .an-legend-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #374151;
+    }
+
+    .an-legend-pct {
+      text-align: right;
+      color: #6b7280;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* empty + loading states */
+    .an-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 36px 0;
+      font-size: 0.9rem;
+      color: #9ca3af;
+    }
+
+    .an-skel {
+      height: 200px;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #f1f3f7 25%, #e7eaf0 37%, #f1f3f7 63%);
+      background-size: 400% 100%;
+      animation: an-shimmer 1.4s ease infinite;
+    }
+
+    @keyframes an-shimmer {
+      from { background-position: 100% 50%; }
+      to   { background-position: 0 50%; }
+    }
+
+    .an-note {
+      margin: 0;
+      font-size: 0.88rem;
+      font-style: italic;
+      color: #9ca3af;
+    }
+
+    @media (max-width: 1100px) {
+      .an-span-5,
+      .an-span-7 {
+        grid-column: span 12;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .an-col,
+      .an-skel {
+        animation: none;
+      }
+
+      .an-ring-fg,
+      .an-hbar-fill {
+        transition: none;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="app-shell" id="app-shell"></div>
 
   <div id="page-content" style="display: none;">
-    <h2>Placement Analytics</h2>
 
-    <div class="dashboard-grid">
-      <div class="stat-card">
-        <div class="stat-label">Students Placed</div>
-        <div class="stat-value" id="stat-placement-count">—</div>
+    <div class="an-head">
+      <div>
+        <h2 class="an-title">Placement analytics</h2>
+        <p class="an-sub">Live figures from your placement records. <span id="anUpdated"></span></p>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Placement %</div>
-        <div class="stat-value" id="stat-placement-pct">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Average Package</div>
-        <div class="stat-value" id="stat-avg-package">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Highest Package</div>
-        <div class="stat-value" id="stat-highest-package">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Applications per Drive</div>
-        <div class="stat-value" id="stat-apps-per-drive">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Selection Rate</div>
-        <div class="stat-value" id="stat-selection-rate">—</div>
+      <div class="an-actions">
+        <button type="button" class="an-btn an-btn-ghost" data-an="refresh">Refresh</button>
+        <button type="button" class="an-btn" data-an="export">Export CSV</button>
       </div>
     </div>
 
-    <div class="card" style="margin-top: 20px;">
-      <h3>Branch-wise Placements</h3>
-      <div id="branchStats">Loading...</div>
+    <div class="an-error" id="anError" role="alert">
+      <span id="anErrorText"></span>
+      <button type="button" class="an-btn an-btn-ghost" data-an="refresh">Try again</button>
     </div>
 
-    <div class="card" style="margin-top: 20px;">
-      <h3>Company-wise Hiring</h3>
-      <div id="companyStats">Loading...</div>
+    <!-- KPI cards -->
+    <div class="an-kpis">
+      <div class="an-kpi">
+        <div class="an-kpi-icon an-c-green">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="an-kpi-label">Students placed</div>
+        <div class="an-kpi-value" id="stat-placement-count">—</div>
+      </div>
+
+      <div class="an-kpi">
+        <div class="an-kpi-icon an-c-blue">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5L5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+        </div>
+        <div class="an-kpi-label">Placement %</div>
+        <div class="an-kpi-value" id="stat-placement-pct">—</div>
+      </div>
+
+      <div class="an-kpi">
+        <div class="an-kpi-icon an-c-indigo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        </div>
+        <div class="an-kpi-label">Average package</div>
+        <div class="an-kpi-value" id="stat-avg-package">—</div>
+      </div>
+
+      <div class="an-kpi">
+        <div class="an-kpi-icon an-c-amber">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+        </div>
+        <div class="an-kpi-label">Highest package</div>
+        <div class="an-kpi-value" id="stat-highest-package">—</div>
+      </div>
+
+      <div class="an-kpi">
+        <div class="an-kpi-icon an-c-sky">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></svg>
+        </div>
+        <div class="an-kpi-label">Applications per drive</div>
+        <div class="an-kpi-value" id="stat-apps-per-drive">—</div>
+      </div>
+
+      <div class="an-kpi">
+        <div class="an-kpi-icon an-c-teal">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+        </div>
+        <div class="an-kpi-label">Selection rate</div>
+        <div class="an-kpi-value" id="stat-selection-rate">—</div>
+      </div>
     </div>
 
-    <div class="card" style="margin-top: 20px;">
-      <p class="placeholder-note">
+    <!-- Row 1: rate gauges + package comparison -->
+    <div class="an-grid">
+      <section class="an-card an-span-5">
+        <h3>Placement and selection</h3>
+        <p class="an-card-sub">Placement rate and selection rate at a glance.</p>
+        <div class="an-card-body">
+          <div class="an-rings" id="anRings"><div class="an-skel" style="width:100%"></div></div>
+        </div>
+      </section>
+
+      <section class="an-card an-span-7">
+        <h3>Package comparison</h3>
+        <p class="an-card-sub">Average package against the highest package, in LPA.</p>
+        <div class="an-card-body">
+          <div id="anPackage"><div class="an-skel"></div></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Row 2: branch chart + company donut -->
+    <div class="an-grid">
+      <section class="an-card an-span-7">
+        <h3>Branch-wise placements</h3>
+        <p class="an-card-sub">Number of students placed in each branch.</p>
+        <div class="an-card-body">
+          <div id="anBranch"><div class="an-skel"></div></div>
+        </div>
+        <p class="an-insight" id="anBranchNote"></p>
+      </section>
+
+      <section class="an-card an-span-5">
+        <h3>Company-wise hiring</h3>
+        <p class="an-card-sub">Share of hires by company.</p>
+        <div class="an-card-body">
+          <div id="anCompany"><div class="an-skel"></div></div>
+        </div>
+        <p class="an-insight" id="anCompanyNote"></p>
+      </section>
+    </div>
+
+    <div class="an-card">
+      <p class="an-note">
         Predictive analytics, at-risk student detection, and skill analytics are
         reserved for the AI team's models.
       </p>
@@ -61,38 +511,303 @@
   <script src="../js/auth.js"></script>
   <script src="../js/layout.js"></script>
   <script>
+    /* ---------- helpers (all names start with "an" so they can't clash with layout.js) ---------- */
+    const AN = { data: null };
+    const AN_COLORS = ["#2563eb", "#6366f1", "#14b8a6", "#f59e0b", "#f43f5e", "#0ea5e9", "#22c55e"];
+    const AN_OTHERS = "#94a3b8";
+
+    function anEsc(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function anNum(v) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+    function anFmt(v, max = 2) {
+      return anNum(v).toLocaleString("en-IN", { maximumFractionDigits: max });
+    }
+    function anShort(s, n) {
+      s = String(s);
+      return s.length > n ? s.slice(0, n - 1) + "…" : s;
+    }
+    function anSet(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+    function anEntries(obj) {
+      return Object.entries(obj || {}).map(([k, v]) => [k, anNum(v)]);
+    }
+    function anEmpty(msg) {
+      return `<div class="an-empty">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        <span>${anEsc(msg)}</span></div>`;
+    }
+    // rounded top corners only, so bars sit flat on the axis
+    function anTopRound(x, y, w, h, r) {
+      r = Math.min(r, w / 2, h);
+      return `M${x},${y + h} V${y + r} Q${x},${y} ${x + r},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${y + h} Z`;
+    }
+    // start rings and bars at zero, then let CSS transitions carry them to their values
+    function anAnimate(root) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        root.querySelectorAll(".an-ring-fg").forEach((el) => { el.style.strokeDashoffset = el.dataset.offset; });
+        root.querySelectorAll(".an-hbar-fill").forEach((el) => { el.style.width = el.dataset.w; });
+      }));
+    }
+
+    /* ---------- chart builders ---------- */
+    function anRing(pct, color, label) {
+      const p = Math.max(0, Math.min(100, anNum(pct)));
+      const r = 54;
+      const c = 2 * Math.PI * r;
+      return `<div class="an-ring">
+        <svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="${anEsc(label)}: ${anFmt(p, 1)} percent">
+          <circle cx="70" cy="70" r="${r}" fill="none" stroke="#eef1f6" stroke-width="14"/>
+          <circle class="an-ring-fg" cx="70" cy="70" r="${r}" fill="none" stroke="${color}" stroke-width="14"
+                  stroke-linecap="round" stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${c.toFixed(2)}"
+                  data-offset="${(c * (1 - p / 100)).toFixed(2)}" transform="rotate(-90 70 70)"/>
+          <text class="an-ring-val" x="70" y="78" text-anchor="middle">${anFmt(p, 1)}%</text>
+        </svg>
+        <div class="an-ring-label">${anEsc(label)}</div>
+      </div>`;
+    }
+
+    function anRenderRings(d) {
+      const el = document.getElementById("anRings");
+      if (!el) return;
+      el.innerHTML =
+        anRing(d.placement_percentage, "#2563eb", "Placement rate") +
+        anRing(d.selection_rate, "#14b8a6", "Selection rate");
+      anAnimate(el);
+    }
+
+    function anRenderPackage(d) {
+      const el = document.getElementById("anPackage");
+      if (!el) return;
+      const avg = anNum(d.average_package);
+      const high = anNum(d.highest_package);
+      if (avg <= 0 && high <= 0) {
+        el.innerHTML = anEmpty("No package data recorded yet.");
+        return;
+      }
+      const max = Math.max(avg, high, 0.0001);
+      const row = (label, v, color) => `<div class="an-hrow">
+        <div class="an-hrow-top"><span>${label}</span><strong>${anFmt(v)} LPA</strong></div>
+        <div class="an-htrack"><div class="an-hbar-fill" style="width:0;background:${color}" data-w="${((v / max) * 100).toFixed(1)}%"></div></div>
+      </div>`;
+      const ratio = high > 0
+        ? `<p class="an-insight">The average package is ${anFmt((avg / high) * 100, 0)}% of the highest package.</p>`
+        : "";
+      el.innerHTML = row("Average package", avg, "#6366f1") + row("Highest package", high, "#f59e0b") + ratio;
+      anAnimate(el);
+    }
+
+    function anRenderBranch(d) {
+      const el = document.getElementById("anBranch");
+      if (!el) return;
+      const entries = anEntries(d.branch_wise_placements).sort((a, b) => b[1] - a[1]);
+      if (!entries.length) {
+        el.innerHTML = anEmpty("No placements recorded yet.");
+        anSet("anBranchNote", "");
+        return;
+      }
+
+      const max = Math.max(...entries.map((e) => e[1]), 1);
+      const steps = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+      const step = steps.find((s) => max / s <= 5) || Math.ceil(max / 5);
+      const top = Math.ceil(max / step) * step;
+
+      const n = entries.length;
+      const padL = 40, padR = 12, padT = 24, padB = 44, H = 270;
+      const plotH = H - padT - padB;
+      const W = Math.max(el.clientWidth || 560, padL + padR + n * 64);
+      const slot = (W - padL - padR) / n;
+      const barW = Math.min(52, slot * 0.56);
+      const maxChars = slot < 76 ? 7 : 12;
+
+      let grid = "";
+      for (let t = 0; t <= top; t += step) {
+        const y = padT + plotH - (t / top) * plotH;
+        grid += `<line x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}" stroke="${t === 0 ? "#d1d5db" : "#eef0f4"}"/>` +
+                `<text class="an-axis" x="${padL - 8}" y="${y + 4}" text-anchor="end">${t}</text>`;
+      }
+
+      const bars = entries.map(([name, v], i) => {
+        const x = padL + i * slot + (slot - barW) / 2;
+        const h = (v / top) * plotH;
+        const y = padT + plotH - h;
+        const cx = x + barW / 2;
+        return `<g><title>${anEsc(name)}: ${v} ${v === 1 ? "placement" : "placements"}</title>` +
+          (h > 0 ? `<path class="an-col" style="animation-delay:${i * 60}ms" d="${anTopRound(x, y, barW, h, 6)}" fill="url(#anBarGrad)"/>` : "") +
+          `<text class="an-val" x="${cx}" y="${y - 7}" text-anchor="middle">${v}</text>` +
+          `<text class="an-xlab" x="${cx}" y="${padT + plotH + 20}" text-anchor="middle">${anEsc(anShort(name, maxChars))}</text></g>`;
+      }).join("");
+
+      el.innerHTML = `<div class="an-scroll"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Bar chart of placements by branch">
+        <defs><linearGradient id="anBarGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#2563eb"/>
+        </linearGradient></defs>${grid}${bars}</svg></div>`;
+
+      const lead = entries[0];
+      anSet("anBranchNote", `${lead[0]} leads with ${lead[1]} ${lead[1] === 1 ? "placement" : "placements"}.`);
+    }
+
+    function anRenderCompany(d) {
+      const el = document.getElementById("anCompany");
+      if (!el) return;
+      const entries = anEntries(d.company_wise_hiring).sort((a, b) => b[1] - a[1]);
+      if (!entries.length) {
+        el.innerHTML = anEmpty("No hiring recorded yet.");
+        anSet("anCompanyNote", "");
+        return;
+      }
+
+      // top 6 companies, everything else grouped as "Others"
+      const items = entries.slice(0, 6).map(([name, v], i) => ({ name, v, color: AN_COLORS[i % AN_COLORS.length] }));
+      const rest = entries.slice(6);
+      if (rest.length) items.push({ name: "Others", v: rest.reduce((s, e) => s + e[1], 0), color: AN_OTHERS });
+
+      const total = items.reduce((s, it) => s + it.v, 0) || 1;
+      const r = 70, sw = 26, c = 2 * Math.PI * r;
+      let offset = 0;
+      const segs = items.map((it) => {
+        const len = (it.v / total) * c;
+        const gap = items.length > 1 ? Math.min(3, len * 0.2) : 0;
+        const draw = Math.max(len - gap, 0);
+        const seg = `<circle cx="100" cy="100" r="${r}" fill="none" stroke="${it.color}" stroke-width="${sw}"
+            stroke-dasharray="${draw.toFixed(2)} ${(c - draw).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}"
+            transform="rotate(-90 100 100)"><title>${anEsc(it.name)}: ${it.v}</title></circle>`;
+        offset += len;
+        return seg;
+      }).join("");
+
+      const legend = items.map((it) => `<li>
+        <span class="an-dot" style="background:${it.color}"></span>
+        <span class="an-legend-name" title="${anEsc(it.name)}">${anEsc(it.name)}</span>
+        <strong>${it.v}</strong>
+        <span class="an-legend-pct">${anFmt((it.v / total) * 100, 0)}%</span></li>`).join("");
+
+      el.innerHTML = `<div class="an-donut-wrap">
+        <svg viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Donut chart of hires by company">
+          <circle cx="100" cy="100" r="${r}" fill="none" stroke="#eef1f6" stroke-width="${sw}"/>
+          ${segs}
+          <text class="an-donut-val" x="100" y="104" text-anchor="middle">${total}</text>
+          <text class="an-donut-cap" x="100" y="124" text-anchor="middle">${total === 1 ? "hire" : "hires"}</text>
+        </svg>
+        <ul class="an-legend">${legend}</ul></div>`;
+
+      const lead = entries[0];
+      anSet("anCompanyNote", `${lead[0]} is hiring the most, with ${lead[1]}.`);
+    }
+
+    function anRenderKpis(d) {
+      anSet("stat-placement-count", anFmt(d.placement_count, 0));
+      anSet("stat-placement-pct", `${anFmt(d.placement_percentage, 1)}%`);
+      anSet("stat-avg-package", `${anFmt(d.average_package)} LPA`);
+      anSet("stat-highest-package", `${anFmt(d.highest_package)} LPA`);
+      anSet("stat-apps-per-drive", anFmt(d.applications_per_drive, 1));
+      anSet("stat-selection-rate", `${anFmt(d.selection_rate, 1)}%`);
+    }
+
+    function anRender() {
+      const d = AN.data;
+      if (!d) return;
+      anRenderKpis(d);
+      anRenderRings(d);
+      anRenderPackage(d);
+      anRenderBranch(d);
+      anRenderCompany(d);
+    }
+
+    /* ---------- loading, errors, export ---------- */
+    function anSkeleton() {
+      const box = document.getElementById("anError");
+      if (box) box.classList.remove("show");
+      ["anRings", "anPackage", "anBranch", "anCompany"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="an-skel" style="width:100%"></div>';
+      });
+      anSet("anBranchNote", "");
+      anSet("anCompanyNote", "");
+    }
+
+    function anShowError(msg) {
+      anSet("anErrorText", "Could not load analytics: " + msg);
+      const box = document.getElementById("anError");
+      if (box) box.classList.add("show");
+      ["anRings", "anPackage", "anBranch", "anCompany"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = anEmpty("No data to show.");
+      });
+    }
+
+    function anCsvCell(v) {
+      let s = String(v);
+      if (/^[=+\-@]/.test(s)) s = "'" + s; // stops spreadsheet formula injection
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+
+    function anExport() {
+      const d = AN.data;
+      if (!d) return;
+      const rows = [
+        ["Metric", "Value"],
+        ["Students placed", d.placement_count],
+        ["Placement %", d.placement_percentage],
+        ["Average package (LPA)", d.average_package],
+        ["Highest package (LPA)", d.highest_package],
+        ["Applications per drive", d.applications_per_drive],
+        ["Selection rate %", d.selection_rate],
+        [],
+        ["Branch", "Placements"],
+        ...anEntries(d.branch_wise_placements),
+        [],
+        ["Company", "Hires"],
+        ...anEntries(d.company_wise_hiring),
+      ];
+      const csv = "\ufeff" + rows.map((r) => r.map(anCsvCell).join(",")).join("\r\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      a.download = `placement-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+
+    async function loadAnalytics() {
+      anSkeleton();
+      try {
+        const res = await apiFetch("/api/analytics/officer/placement-stats");
+        if (!res) return; // apiFetch already redirected to login
+        AN.data = res.data;
+        anRender();
+        anSet("anUpdated", "Updated " + new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }) + ".");
+      } catch (err) {
+        anShowError(err.message);
+      }
+    }
+
+    // Buttons (event delegation keeps them working wherever layout.js places this content)
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-an]");
+      if (!btn) return;
+      if (btn.dataset.an === "refresh") loadAnalytics();
+      if (btn.dataset.an === "export") anExport();
+    });
+
+    // Redraw the branch chart when the window width changes
+    let anResizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(anResizeTimer);
+      anResizeTimer = setTimeout(() => { if (AN.data) anRenderBranch(AN.data); }, 200);
+    });
+
+    /* ---------- start ---------- */
     const user = requireAuth(["placement_officer"]);
     if (user) {
       renderShell(user, "officer-analytics.html");
       loadAnalytics();
-    }
-
-    async function loadAnalytics() {
-      try {
-        const res = await apiFetch("/api/analytics/officer/placement-stats");
-        const d = res.data;
-
-        document.getElementById("stat-placement-count").textContent = d.placement_count;
-        document.getElementById("stat-placement-pct").textContent = `${d.placement_percentage}%`;
-        document.getElementById("stat-avg-package").textContent = `${d.average_package} LPA`;
-        document.getElementById("stat-highest-package").textContent = `${d.highest_package} LPA`;
-        document.getElementById("stat-apps-per-drive").textContent = d.applications_per_drive;
-        document.getElementById("stat-selection-rate").textContent = `${d.selection_rate}%`;
-
-        const branchEl = document.getElementById("branchStats");
-        const branchEntries = Object.entries(d.branch_wise_placements);
-        branchEl.innerHTML = branchEntries.length
-          ? branchEntries.map(([branch, count]) => `<p>${branch}: ${count}</p>`).join("")
-          : "<p>No placements recorded yet.</p>";
-
-        const companyEl = document.getElementById("companyStats");
-        const companyEntries = Object.entries(d.company_wise_hiring);
-        companyEl.innerHTML = companyEntries.length
-          ? companyEntries.map(([company, count]) => `<p>${company}: ${count}</p>`).join("")
-          : "<p>No hiring recorded yet.</p>";
-      } catch (err) {
-        document.getElementById("branchStats").textContent = "Failed to load: " + err.message;
-      }
     }
   </script>
 </body>

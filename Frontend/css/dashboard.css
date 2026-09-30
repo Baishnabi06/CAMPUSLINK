@@ -190,7 +190,6 @@
   font-size: 0.9rem;
 }
 
-
 .drive-item {
   display: flex;
   justify-content: space-between;
@@ -228,56 +227,4 @@
   font-size: 0.7rem;
   padding: 1px 6px;
   margin-left: 6px;
-}
-
-/* ---- Login page: password / email-code tabs ---- */
-[hidden] {
-  display: none !important;
-}
-
-.auth-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.auth-tabs .tab {
-  flex: 1;
-  margin: 0; /* cancels the global button margins from style.css */
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.auth-tabs .tab:hover {
-  background: #d1d5db;
-}
-
-.auth-tabs .tab.active,
-.auth-tabs .tab.active:hover {
-  background: #2563eb;
-  color: white;
-}
-
-.auth-info {
-  color: #15803d;
-  font-size: 0.85rem;
-  min-height: 18px;
-  margin-bottom: 8px;
-}
-
-/* 6-digit code box */
-#otpCode {
-  text-align: center;
-  font-size: 1.3rem;
-  letter-spacing: 0.4em;
-}
-
-/* "Resend code" as a quieter secondary button */
-#resendOtpBtn {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-#resendOtpBtn:hover {
-  background: #d1d5db;
 }
