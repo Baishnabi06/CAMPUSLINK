@@ -58,7 +58,7 @@
                   <strong>${d.job_title}</strong> at ${d.company_name} — CTC ${d.ctc} LPA
                   <br />
                   <span style="color:#6b7280; font-size:0.85rem;">
-                    Deadline: ${d.application_deadline.slice(0, 10)} | Mode: ${d.mode} | Openings: ${d.openings}
+                    Deadline: ${new Date(d.application_deadline).toLocaleDateString()} | Mode: ${d.mode} | Openings: ${d.openings}
                   </span>
                   <p style="margin: 6px 0;">${d.job_description}</p>
                 </div>

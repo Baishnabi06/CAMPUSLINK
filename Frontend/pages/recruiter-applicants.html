@@ -2,10 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CampusLink — Applicants</title>
+
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
 </head>
+
 <body>
   <div class="app-shell" id="app-shell"></div>
 
@@ -15,20 +18,26 @@
     <div class="card">
       <div class="form-group">
         <label for="driveSelect">Select a Drive</label>
-        <select id="driveSelect"></select>
+        <select id="driveSelect">
+          <option>Loading drives...</option>
+        </select>
       </div>
     </div>
 
     <div class="card" style="margin-top: 20px;">
-      <div id="applicantsList">Select a drive to view applicants.</div>
+      <div id="applicantsList">
+        Select a drive to view applicants.
+      </div>
     </div>
   </div>
 
   <script src="../js/api.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/layout.js"></script>
+
   <script>
     const user = requireAuth(["recruiter"]);
+
     if (user) {
       renderShell(user, "recruiter-applicants.html");
       loadDriveOptions();
@@ -36,19 +45,118 @@
 
     async function loadDriveOptions() {
       const select = document.getElementById("driveSelect");
+
       try {
         const res = await apiFetch("/api/drives/mine");
-        const drives = res.data;
+        const drives = res.data || [];
 
         if (drives.length === 0) {
           select.innerHTML = "<option>No drives created yet</option>";
+          document.getElementById("applicantsList").innerHTML =
+            "<p>No drives available.</p>";
           return;
         }
 
         select.innerHTML = drives
-          .map((d) => `<option value="${d.id}">${d.job_title} at ${d.company_name}</option>`)
+          .map(
+            (d) =>
+              `<option value="${d.id}">${d.job_title} at ${d.company_name}</option>`
+          )
           .join("");
 
-        select.addEventListener("change", () => loadApplicants(select.value));
-        loadApplicants(select.value);
-      } catch
+        select.addEventListener("change", () => {
+          loadApplicants(select.value);
+        });
+
+        await loadApplicants(select.value);
+      } catch (error) {
+        console.error("Failed to load drives:", error);
+
+        select.innerHTML = "<option>Failed to load drives</option>";
+
+        document.getElementById("applicantsList").innerHTML =
+          "<p>Failed to load drives. Please try again.</p>";
+      }
+    }
+
+    async function loadApplicants(driveId) {
+      const list = document.getElementById("applicantsList");
+
+      list.innerHTML = "<p>Loading applicants...</p>";
+
+      try {
+        const res = await apiFetch(
+          `/api/applications/drive/${driveId}`
+        );
+
+        const applicants = res.data || [];
+
+        if (applicants.length === 0) {
+          list.innerHTML = "<p>No applicants found for this drive.</p>";
+          return;
+        }
+
+        list.innerHTML = applicants
+          .map(
+            (app) => `
+              <div class="card" style="margin-bottom: 15px;">
+                <h3>${app.student?.name || "Unknown Student"}</h3>
+
+                <p>
+                  <strong>Email:</strong>
+                  ${app.student?.email || "-"}
+                </p>
+
+                <p>
+                  <strong>Branch:</strong>
+                  ${app.student?.branch || "-"}
+                </p>
+
+                <p>
+                  <strong>CGPA:</strong>
+                  ${app.student?.cgpa ?? "-"}
+                </p>
+
+                <p>
+                  <strong>Status:</strong>
+                  ${app.status || "-"}
+                </p>
+
+                <p>
+                  <strong>Applied At:</strong>
+                  ${
+                    app.applied_at
+                      ? new Date(app.applied_at).toLocaleString()
+                      : "-"
+                  }
+                </p>
+
+                ${
+                  app.student?.resume_url
+                    ? `
+                      <p>
+                        <a
+                          href="${app.student.resume_url}"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View Resume
+                        </a>
+                      </p>
+                    `
+                    : ""
+                }
+              </div>
+            `
+          )
+          .join("");
+      } catch (error) {
+        console.error("Failed to load applicants:", error);
+
+        list.innerHTML =
+          "<p>Failed to load applicants. Please try again.</p>";
+      }
+    }
+  </script>
+</body>
+</html>
