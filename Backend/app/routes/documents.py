@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 from app.services.notifications import create_notification
 from bson import ObjectId
 from bson.errors import InvalidId
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import Response
+from urllib.parse import quote
 
 from app.database import get_db
 from app.core.deps import require_role, get_current_user
@@ -20,20 +22,57 @@ def document_out(doc: dict) -> dict:
 
 @router.post("", status_code=201)
 async def submit_document(
-    payload: DocumentCreate, current_user: dict = Depends(require_role("student"))
+    document_type: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_role("student")),
 ):
     db = get_db()
+
+    allowed_extensions = {".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx"}
+
+    filename = file.filename or ""
+    extension = "." + filename.split(".")[-1].lower() if "." in filename else ""
+
+    if extension not in allowed_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported file type. Allowed: PDF, JPG, JPEG, PNG, DOC, DOCX",
+        )
+
+    file_content = await file.read()
+
+    max_file_size = 10 * 1024 * 1024  # 10 MB
+
+    if len(file_content) > max_file_size:
+        raise HTTPException(
+            status_code=400,
+            detail="File size must be less than 10 MB",
+        )
+
     document = {
         "student_id": str(current_user["_id"]),
-        "document_type": payload.document_type,
+        "document_type": document_type,
+        "file_name": filename,
+        "file_content": file_content,
+        "content_type": file.content_type,
         "submission_status": "submitted",
         "verification_status": "pending",
         "submitted_date": datetime.now(timezone.utc),
         "verified_date": None,
     }
+
     result = await db.documents.insert_one(document)
     document["_id"] = result.inserted_id
-    return {"success": True, "message": "Document submitted", "data": document_out(document)}
+
+    # Do not return the binary file content in the API response
+    response_document = document_out(document)
+    response_document.pop("file_content", None)
+
+    return {
+        "success": True,
+        "message": "Document submitted",
+        "data": response_document,
+    }
 
 
 @router.get("/mine")
@@ -55,9 +94,44 @@ async def list_all_documents(current_user: dict = Depends(get_current_user)):
     async for doc in cursor:
         user_doc = await db.users.find_one({"_id": ObjectId(doc["student_id"])})
         out = document_out(doc)
+        out.pop("file_content", None)
         out["student_name"] = user_doc["name"] if user_doc else "Unknown"
         results.append(out)
     return {"success": True, "message": "All documents fetched", "data": results}
+
+
+@router.get("/{document_id}/file")
+async def get_document_file(
+    document_id: str,
+    current_user: dict = Depends(require_role("recruiter", "placement_officer")),
+):
+    db = get_db()
+    try:
+        oid = ObjectId(document_id)
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid document id")
+
+    document = await db.documents.find_one({"_id": oid})
+    if not document or "file_content" not in document:
+        raise HTTPException(status_code=404, detail="Document file not found")
+
+    filename = (document.get("file_name") or "document").replace("\\", "/").split("/")[-1]
+    content_type = document.get("content_type") or "application/octet-stream"
+    disposition = "inline" if content_type in {
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+    } else "attachment"
+
+    return Response(
+        content=document["file_content"],
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f"{disposition}; filename*=UTF-8''{quote(filename, safe='')}",
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 
 @router.patch("/{document_id}/verify")

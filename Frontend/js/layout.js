@@ -16,6 +16,7 @@ const NAV_CONFIG = {
     { label: "Applicants", href: "recruiter-applicants.html", icon: "👥" },
     { label: "Interviews", href: "recruiter-interviews.html", icon: "🎤" },
     { label: "Offers", href: "recruiter-offers.html", icon: "🎁" },
+    { label: "Documents", href: "recruiter-documents.html", icon: "📄" },
     { label: "Notifications", href: "notifications.html", icon: "🔔" },
   ],
 
@@ -87,6 +88,10 @@ function getTopbarMeta(activePage) {
     "recruiter-offers.html": {
       label: "Offers",
       subtitle: "Offer management",
+    },
+    "recruiter-documents.html": {
+      label: "Documents",
+      subtitle: "Candidate documents",
     },
 
     "officer-dashboard.html": {

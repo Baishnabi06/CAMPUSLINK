@@ -56,7 +56,7 @@
     }
 
     /* =====================================================================
-       Left: brand panel with the 3D stack of documents
+       Left: brand panel with student characters
        ===================================================================== */
 
     .lp-brand {
@@ -95,7 +95,7 @@
       text-wrap: balance;
     }
 
-    /* Perspective floor grid: a depth cue for the 3D scene */
+    /* Subtle campus-inspired backdrop beneath the character group */
     .lp-floor {
       position: absolute;
       left: -25%;
@@ -114,8 +114,6 @@
     }
 
     .lp-scene {
-      --mx: 0;
-      --my: 0;
       position: relative;
       z-index: 1;
       flex: 1;
@@ -124,205 +122,37 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      perspective: 1500px;
-      perspective-origin: 50% 35%;
+      align-items: center;
+      justify-content: center;
     }
 
-    .lp-stack {
-      position: relative;
-      width: clamp(210px, 19vw, 272px);
-      aspect-ratio: 27 / 35;
-      transform-style: preserve-3d;
-      transform:
-        rotateX(calc(9deg + var(--my) * -9deg))
-        rotateY(calc(-24deg + var(--mx) * 18deg));
-      transition: transform 0.2s ease-out;
+    .lp-students {
+      display: block;
+      width: min(100%, 600px);
+      max-height: 430px;
+      overflow: visible;
     }
 
     .lp-shadow {
       position: absolute;
       left: 50%;
-      bottom: 11%;
-      width: min(330px, 60%);
-      height: 40px;
+      bottom: 17%;
+      width: min(480px, 78%);
+      height: 30px;
       transform: translateX(-50%);
       background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), transparent);
       filter: blur(4px);
     }
 
-    .lp-sheet {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      padding: 22px;
-      border-radius: 18px;
-      color: var(--ink);
-      background: linear-gradient(150deg, #ffffff 0%, #e8eeff 100%);
-      box-shadow:
-        inset 0 1px 0 #fff,
-        0 28px 44px rgba(2, 8, 30, 0.38);
-      transform-style: preserve-3d;
-      animation: lp-bob 7s ease-in-out infinite alternate;
-      animation-delay: var(--d, 0s);
-    }
-
-    .lp-sheet--back {
-      --d: -2.5s;
-      transform: translate3d(-70px, -26px, -130px) rotateZ(-3deg);
-    }
-
-    .lp-sheet--mid {
-      --d: -1.2s;
-      transform: translate3d(-34px, -9px, -55px) rotateZ(-1deg);
-    }
-
-    .lp-sheet--front {
-      --d: 0s;
-      transform: translate3d(0, 0, 20px);
-    }
-
-    /* light sheen that slides across the front sheet as the stack tilts */
-    .lp-sheet--front::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      pointer-events: none;
-      background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.5) 50%, transparent 65%);
-      background-size: 260% 100%;
-      background-position: calc(50% + var(--mx) * -60%) 0;
-    }
-
-    @keyframes lp-bob {
-      from { translate: 0 0; }
-      to   { translate: 0 -10px; }
-    }
-
-    /* sheet contents: abstract, no text */
-    .sh-head {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .sh-avatar {
-      position: relative;
-      flex: none;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--blue);
-      box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.14);
-    }
-
-    .sh-avatar::before {
-      content: "";
-      position: absolute;
-      left: 50%;
-      top: 9px;
-      width: 14px;
-      height: 14px;
-      margin-left: -7px;
-      border-radius: 50%;
-      background: #fff;
-    }
-
-    .sh-lines {
-      display: flex;
-      flex: 1;
-      flex-direction: column;
-      gap: 9px;
-    }
-
-    .sh-lines i {
-      display: block;
-      height: 9px;
-      border-radius: 5px;
-      background: #c9d6f5;
-    }
-
-    .sh-lines .w40 { width: 40%; }
-    .sh-lines .w50 { width: 50%; }
-    .sh-lines .w60 { width: 60%; }
-    .sh-lines .w75 { width: 75%; }
-    .sh-lines .w85 { width: 85%; }
-    .sh-lines .w100 { width: 100%; }
-
-    .sh-chips {
-      display: flex;
-      gap: 8px;
-    }
-
-    .sh-chips i {
-      display: block;
-      width: 58px;
-      height: 22px;
-      border-radius: 999px;
-      background: #dbe5ff;
-    }
-
-    .sh-progress {
-      height: 10px;
-      margin-top: auto;
-      border-radius: 6px;
-      background: #d6e0fa;
-      overflow: hidden;
-    }
-
-    .sh-progress b {
-      display: block;
-      width: 68%;
-      height: 100%;
-      background: var(--blue);
-    }
-
-    .sh-cal {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-      transform-style: preserve-3d;
-    }
-
-    .sh-cal i {
-      display: block;
-      aspect-ratio: 1;
-      border-radius: 6px;
-      background: #d6e0fa;
-    }
-
-    .sh-cal i.on {
-      background: var(--blue);
-      box-shadow: 0 8px 14px rgba(37, 99, 235, 0.45);
-      transform: translateZ(34px);
-    }
-
-    .sh-foot {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-top: auto;
-      transform-style: preserve-3d;
-    }
-
-    .sh-sign {
-      width: 112px;
-      height: auto;
-    }
-
-    .sh-seal {
-      display: grid;
-      place-items: center;
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, #ffe28f, var(--gold) 55%, #e09a00);
-      box-shadow:
-        inset 0 -4px 0 rgba(0, 0, 0, 0.12),
-        0 12px 20px rgba(224, 154, 0, 0.4);
-      transform: translateZ(46px);
-    }
+    .student { transform-box: fill-box; transform-origin: center bottom; }
+    .student .head { transform-box: fill-box; transform-origin: center bottom; transition: transform 260ms ease; }
+    .student .smile { opacity: 0; transition: opacity 220ms ease; }
+    .student .rest-mouth { opacity: 1; transition: opacity 220ms ease; }
+    .lp-scene.is-happy .student .head { transform: translateY(-3px) rotate(-2deg); }
+    .lp-scene.is-happy .student:nth-of-type(even) .head { transform: translateY(-3px) rotate(2deg); }
+    .lp-scene.is-happy .student .smile { opacity: 1; }
+    .lp-scene.is-happy .student .rest-mouth { opacity: 0; }
+    .pupil { transition: transform 70ms linear; }
 
     /* =====================================================================
        Right: form panel
@@ -545,7 +375,7 @@
     }
 
     /* =====================================================================
-       Small screens: brand panel becomes a header, the 3D scene is hidden
+       Small screens: brand panel becomes a header, the student scene is hidden
        ===================================================================== */
 
     @media (max-width: 900px) {
@@ -578,16 +408,24 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .lp-sheet,
+      .student .head,
+      .lp-students .pupil,
       .lp-form-wrap form,
       #otpCodeStep {
         animation: none;
       }
 
-      .lp-stack,
       .lp-btn {
         transition: none;
       }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .student .head,
+      .student .smile,
+      .student .rest-mouth,
+      .pupil { transition: none; }
+      .lp-scene.is-happy .student .head { transform: none; }
     }
   </style>
 </head>

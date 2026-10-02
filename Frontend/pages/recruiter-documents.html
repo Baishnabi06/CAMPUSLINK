@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusLink — Candidate Documents</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <h2>Candidate Documents</h2>
+    <div class="card table-scroll">
+      <div id="documentsState" role="status">Loading candidate documents...</div>
+      <div id="documentActionError" class="auth-error" role="alert" hidden></div>
+      <table id="documentsTable" class="data-table" hidden>
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Document</th>
+            <th>File</th>
+            <th>Submitted</th>
+            <th>Status</th>
+            <th>Verification</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="documentsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["recruiter"]);
+    if (user) {
+      renderShell(user, "recruiter-documents.html");
+      loadDocuments();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "-").replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character]);
+    }
+
+    function formatDate(value) {
+      const date = value ? new Date(value) : null;
+      return date && !Number.isNaN(date.getTime())
+        ? date.toLocaleDateString()
+        : "-";
+    }
+
+    async function loadDocuments() {
+      const state = document.getElementById("documentsState");
+      const table = document.getElementById("documentsTable");
+      const tableBody = document.getElementById("documentsTableBody");
+      state.textContent = "Loading candidate documents...";
+      table.hidden = true;
+
+      try {
+        const res = await apiFetch("/api/documents/all");
+        const documents = res.data || [];
+
+        if (documents.length === 0) {
+          state.textContent = "No candidate documents available.";
+          return;
+        }
+
+        tableBody.innerHTML = documents.map((item) => `
+          <tr>
+            <td>${escapeHtml(item.student_name)}</td>
+            <td>${escapeHtml(item.document_type)}</td>
+            <td>${escapeHtml(item.file_name)}</td>
+            <td>${escapeHtml(formatDate(item.submitted_date))}</td>
+            <td>${escapeHtml(item.submission_status)}</td>
+            <td><span class="badge">${escapeHtml(item.verification_status)}</span></td>
+            <td><button type="button" data-document-id="${escapeHtml(item.id)}" data-file-name="${escapeHtml(item.file_name)}" data-content-type="${escapeHtml(item.content_type)}">View / Open</button></td>
+          </tr>
+        `).join("");
+
+        state.hidden = true;
+        table.hidden = false;
+      } catch (error) {
+        state.textContent = `Failed to load candidate documents: ${error.message}`;
+      }
+    }
+
+    document.getElementById("documentsTableBody").addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-document-id]");
+      if (!button) return;
+
+      const previewableTypes = ["application/pdf", "image/jpeg", "image/png"];
+      const shouldPreview = previewableTypes.includes(button.dataset.contentType);
+      const viewer = shouldPreview ? window.open("about:blank", "_blank") : null;
+      if (shouldPreview && !viewer) {
+        document.getElementById("documentActionError").textContent =
+          "Allow pop-ups to open the document.";
+        document.getElementById("documentActionError").hidden = false;
+        return;
+      }
+      if (viewer) viewer.opener = null;
+
+      const errorEl = document.getElementById("documentActionError");
+      errorEl.hidden = true;
+      try {
+        const file = await apiFetchBlob(
+          `/api/documents/${encodeURIComponent(button.dataset.documentId)}/file`
+        );
+        if (!file) {
+          if (viewer) viewer.close();
+          return;
+        }
+        const objectUrl = URL.createObjectURL(file);
+        if (viewer) {
+          viewer.location.href = objectUrl;
+        } else {
+          const download = document.createElement("a");
+          download.href = objectUrl;
+          download.download = button.dataset.fileName || "document";
+          document.body.appendChild(download);
+          download.click();
+          download.remove();
+        }
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+      } catch (error) {
+        if (viewer) viewer.close();
+        errorEl.textContent = `Failed to open document: ${error.message}`;
+        errorEl.hidden = false;
+      }
+    });
+  </script>
+</body>
+</html>

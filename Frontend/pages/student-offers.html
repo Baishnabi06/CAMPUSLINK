@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>CampusLink — My Offers</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
 </head>
+
 <body>
   <div class="app-shell" id="app-shell"></div>
 
@@ -22,6 +24,12 @@
           <label for="document_type">Document Type</label>
           <input type="text" id="document_type" placeholder="e.g. Offer Letter Copy, ID Proof, Marksheet" required />
         </div>
+
+        <div class="form-group">
+          <label for="document_file">Upload Document</label>
+          <input type="file" id="document_file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required />
+        </div>
+
         <button type="submit">Submit Document</button>
       </form>
       <div id="documentsList" style="margin-top: 16px;">Loading...</div>
@@ -63,13 +71,12 @@
                 <br />
                 <span class="badge">${o.status}</span>
               </div>
-              ${
-                o.status === "offer_generated"
-                  ? `<div class="drive-actions">
+              ${o.status === "offer_generated"
+                ? `<div class="drive-actions">
                        <button onclick="respond('${o.id}', 'accept')">Accept</button>
                        <button onclick="respond('${o.id}', 'reject')" class="logout-btn">Reject</button>
                      </div>`
-                  : ""
+                : ""
               }
             </div>`
           )
@@ -90,16 +97,31 @@
 
     document.getElementById("documentForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+
       const typeInput = document.getElementById("document_type");
+      const fileInput = document.getElementById("document_file");
+
+      if (!fileInput.files.length) {
+        alert("Please select a document to upload.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("document_type", typeInput.value);
+      formData.append("file", fileInput.files[0]);
+
       try {
-        await apiFetch("/api/documents", { method: "POST", body: { document_type: typeInput.value } });
+        await apiUpload("/api/documents", formData);
+
         typeInput.value = "";
+        fileInput.value = "";
+
+        alert("Document uploaded successfully.");
         loadMyDocuments();
       } catch (err) {
         alert("Failed to submit: " + err.message);
       }
     });
-
     async function loadMyDocuments() {
       const listEl = document.getElementById("documentsList");
       try {
@@ -133,4 +155,5 @@
     }
   </script>
 </body>
+
 </html>

@@ -36,7 +36,7 @@ main {
 
 button {
   background: #2563eb;
-  color: white;
+  color: rgb(238, 234, 234);
   border: none;
   padding: 10px 16px;
   border-radius: 6px;
@@ -55,4 +55,14 @@ pre {
   border-radius: 6px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.user-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #000000 !important;
+}
+
+.user-chip:hover .user-name {
+  color: #fcfcfc !important;
 }

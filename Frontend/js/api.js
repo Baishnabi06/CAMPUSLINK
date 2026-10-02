@@ -90,3 +90,31 @@ async function apiUpload(path, formData) {
   }
   return data;
 }
+
+/** Fetches an authenticated file response without JSON parsing. */
+async function apiFetchBlob(path) {
+  const token = getToken();
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const response = await fetch(`${API_BASE_URL}${path}`, { headers });
+
+  if (response.status === 401) {
+    clearAuth();
+    window.location.href = "login.html";
+    return;
+  }
+
+  if (!response.ok) {
+    let message = "Failed to retrieve document";
+    try {
+      const data = await response.json();
+      message = data.detail || data.message || message;
+    } catch (err) {
+      // Keep the default message when the server response is not JSON.
+    }
+    throw new Error(message);
+  }
+
+  return response.blob();
+}

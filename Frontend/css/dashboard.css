@@ -247,6 +247,7 @@ button, input, select, textarea {
 .user-chip {
   display: flex;
   align-items: center;
+  color: #14213d;
   gap: 10px;
   padding: 6px 10px 6px 6px;
   border: 1px solid var(--cl-border);
@@ -273,10 +274,7 @@ button, input, select, textarea {
   line-height: 1.2;
 }
 
-.user-name {
-  font-weight: 700;
-  font-size: 0.95rem;
-}
+
 
 .user-role {
   font-size: 0.74rem;
@@ -894,4 +892,10 @@ button, input, select, textarea {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+.topbar .topbar-user .user-chip .user-meta .user-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #3f5efb !important;
 }
