@@ -5,49 +5,67 @@
   <title>CampusLink — Recruiter Dashboard</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="app-shell" id="app-shell"></div>
 
   <div id="page-content" style="display: none;">
-    <h2 id="welcomeHeading">Welcome</h2>
-    <div class="dashboard-grid">
-      <div class="stat-card">
-        <div class="stat-label">Active Drives</div>
-        <div class="stat-value" id="stat-active-drives">—</div>
+    <div class="page-shell">
+      <header class="dashboard-header">
+        <div>
+          <h2 id="welcomeHeading">Welcome</h2>
+          <p class="welcome-subtitle">Monitor your hiring pipeline and placement drives.</p>
+        </div>
+        <span class="portal-badge">Recruiter Portal</span>
+      </header>
+
+      <div id="kpiGrid" class="dashboard-grid">
+        <div class="state-message"><span class="spinner"></span>Loading dashboard data...</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Applications</div>
-        <div class="stat-value" id="stat-applications">—</div>
+
+      <div class="section-heading"><h3>Recruitment Analytics</h3></div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h4>Applicant Funnel</h4>
+          <div class="chart-container"><canvas id="funnelChart"></canvas></div>
+          <div id="funnelChartEmpty" class="state-message" style="display:none;">No applicants yet.</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Shortlisted</div>
-        <div class="stat-value" id="stat-shortlisted">—</div>
+
+      <div class="chart-grid" style="margin-top: 18px;">
+        <div class="chart-card">
+          <h4>Application Status</h4>
+          <div class="chart-container"><canvas id="statusChart"></canvas></div>
+          <div id="statusChartEmpty" class="state-message" style="display:none;">No applications yet.</div>
+        </div>
+        <div class="chart-card">
+          <h4>Applications Over Time</h4>
+          <div class="chart-container"><canvas id="trendChart"></canvas></div>
+          <div id="trendChartEmpty" class="state-message" style="display:none;">Not enough data yet to show a trend.</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Interviews</div>
-        <div class="stat-value" id="stat-interviews">—</div>
+
+      <div class="section-heading"><h3>Drive Performance</h3></div>
+      <div class="card table-scroll" id="drivePerformance">
+        <div class="state-message"><span class="spinner"></span>Loading...</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Offers</div>
-        <div class="stat-value" id="stat-offers">—</div>
+
+      <div class="section-heading"><h3>Upcoming Interviews</h3></div>
+      <div class="card" id="upcomingInterviews">
+        <div class="state-message"><span class="spinner"></span>Loading...</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Hired</div>
-        <div class="stat-value" id="stat-hired">—</div>
+
+      <div class="card ai-card">
+        <h3>AI Candidate Matching</h3>
+        <p class="placeholder-note">Candidate matching insights will appear here once the AI recommendation model is connected.</p>
+        <span class="coming-soon">Coming Soon</span>
       </div>
-    </div>
-    <div class="card" style="margin-top: 20px;">
-      <h3>AI Candidate Matching</h3>
-      <p class="placeholder-note">Reserved for the AI team's recruiter–student matching model.</p>
-    </div>
-    <div class="card" style="margin-top: 20px;">
-      <h3>Candidate Fit Score</h3>
-      <p class="placeholder-note">Reserved for the AI team's fit-scoring model.</p>
-    </div>
-    <div class="card" style="margin-top: 20px;">
-      <h3>AI Recommendations</h3>
-      <p class="placeholder-note">Reserved for the AI team's recommendation engine.</p>
+      <div class="card ai-card">
+        <h3>Candidate Fit Score</h3>
+        <p class="placeholder-note">Fit-scoring details will be displayed when the AI scoring engine is live.</p>
+        <span class="coming-soon">Coming Soon</span>
+      </div>
     </div>
   </div>
 
@@ -56,25 +74,246 @@
   <script src="../js/layout.js"></script>
   <script>
     const user = requireAuth(["recruiter"]);
+    let funnelChartInstance = null;
+    let statusChartInstance = null;
+    let trendChartInstance = null;
+
     if (user) {
       renderShell(user, "recruiter-dashboard.html");
-      document.getElementById("welcomeHeading").textContent = `Welcome, ${user.name}`;
-      loadSummary();
+      document.getElementById("welcomeHeading").innerHTML = `Good morning, ${user.name}`;
+      document.querySelector(".welcome-subtitle").textContent = "Monitor your hiring pipeline and placement drives.";
+      loadRecruiterDashboard();
     }
 
-    async function loadSummary() {
+    async function loadRecruiterDashboard() {
+      let summary = null, trend = [], drivePerf = [], interviews = [];
+
       try {
-        const res = await apiFetch("/api/analytics/recruiter/summary");
-        const d = res.data;
-        document.getElementById("stat-active-drives").textContent = `${d.active_drives} / ${d.total_drives}`;
-        document.getElementById("stat-applications").textContent = d.applications;
-        document.getElementById("stat-shortlisted").textContent = d.shortlisted;
-        document.getElementById("stat-interviews").textContent = d.interviews;
-        document.getElementById("stat-offers").textContent = d.offers;
-        document.getElementById("stat-hired").textContent = d.hired;
+        const [summaryRes, trendRes, perfRes, interviewsRes] = await Promise.all([
+          apiFetch("/api/analytics/recruiter/summary"),
+          apiFetch("/api/analytics/recruiter/applications-trend"),
+          apiFetch("/api/analytics/recruiter/drive-performance"),
+          apiFetch("/api/interviews/mine"),
+        ]);
+        summary = summaryRes.data;
+        trend = trendRes.data;
+        drivePerf = perfRes.data;
+        interviews = interviewsRes.data;
       } catch (err) {
-        // Leave dashes on failure
+        document.getElementById("kpiGrid").innerHTML =
+          `<div class="state-message error">Unable to load dashboard data. Please try again.</div>`;
+        return;
       }
+
+      renderRecruiterStats(summary);
+      renderApplicantFunnel(summary);
+      renderApplicationStatusChart(summary.status_breakdown);
+      renderApplicationsTrend(trend);
+      renderDrivePerformance(drivePerf);
+      renderUpcomingInterviews(interviews);
+    }
+
+    function renderRecruiterStats(summary) {
+      const cards = [
+        { icon: "🏢", label: "Active Drives", value: `${summary.active_drives} / ${summary.total_drives}`, sub: "Open of total" },
+        { icon: "📄", label: "Total Applicants", value: summary.applications, sub: "Across all drives" },
+        { icon: "⭐", label: "Shortlisted", value: summary.shortlisted, sub: "Awaiting interview" },
+        { icon: "🎙️", label: "Interviews Scheduled", value: summary.interviews, sub: "Total" },
+        { icon: "🎉", label: "Offers Made", value: summary.offers, sub: "Total" },
+        { icon: "✅", label: "Positions Filled", value: summary.hired, sub: "Accepted / joined" },
+      ];
+
+      document.getElementById("kpiGrid").innerHTML = cards
+        .map(
+          (c) => `
+          <div class="kpi-card">
+            <div class="kpi-icon">${c.icon}</div>
+            <div class="kpi-body">
+              <div class="kpi-label">${c.label}</div>
+              <div class="kpi-value">${c.value}</div>
+              <div class="kpi-sub">${c.sub}</div>
+            </div>
+          </div>`
+        )
+        .join("");
+    }
+
+    function renderApplicantFunnel(summary) {
+      const canvas = document.getElementById("funnelChart");
+      const emptyEl = document.getElementById("funnelChartEmpty");
+
+      if (summary.applications === 0) {
+        canvas.style.display = "none";
+        emptyEl.style.display = "block";
+        return;
+      }
+      canvas.style.display = "block";
+      emptyEl.style.display = "none";
+
+      const stages = ["Applicants", "Shortlisted", "Interviews", "Selected", "Offered"];
+      const values = [summary.applications, summary.shortlisted, summary.interviews, summary.selected, summary.offers];
+
+      if (funnelChartInstance) funnelChartInstance.destroy();
+      funnelChartInstance = new Chart(canvas, {
+        type: "bar",
+        data: {
+          labels: stages,
+          datasets: [{
+            label: "Candidates",
+            data: values,
+            backgroundColor: ["#6366f1", "#7c8cff", "#a9b7ff", "#5dd0a8", "#2ca17b"],
+            borderRadius: 8,
+            borderSkipped: false,
+          }],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { backgroundColor: "#0f172a", padding: 10 } },
+          scales: {
+            x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(148, 163, 184, 0.15)" } },
+            y: { grid: { display: false } }
+          }
+        },
+      });
+    }
+
+    function renderApplicationStatusChart(breakdown) {
+      const canvas = document.getElementById("statusChart");
+      const emptyEl = document.getElementById("statusChartEmpty");
+      const total = Object.values(breakdown).reduce((a, b) => a + b, 0);
+
+      if (total === 0) {
+        canvas.style.display = "none";
+        emptyEl.style.display = "block";
+        return;
+      }
+      canvas.style.display = "block";
+      emptyEl.style.display = "none";
+
+      if (statusChartInstance) statusChartInstance.destroy();
+      statusChartInstance = new Chart(canvas, {
+        type: "doughnut",
+        data: {
+          labels: ["Applied", "Shortlisted", "Selected", "Rejected"],
+          datasets: [{
+            data: [breakdown.applied, breakdown.shortlisted, breakdown.selected, breakdown.rejected],
+            backgroundColor: ["#6366f1", "#f3b93c", "#34a853", "#f06b78"],
+            borderColor: "#ffffff",
+            borderWidth: 2,
+            hoverOffset: 6,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "58%",
+          plugins: {
+            legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 8, padding: 16 } },
+            tooltip: { enabled: true, backgroundColor: "#0f172a", padding: 10 }
+          }
+        },
+      });
+    }
+
+    function renderApplicationsTrend(trend) {
+      const canvas = document.getElementById("trendChart");
+      const emptyEl = document.getElementById("trendChartEmpty");
+
+      if (trend.length === 0) {
+        canvas.style.display = "none";
+        emptyEl.style.display = "block";
+        return;
+      }
+      canvas.style.display = "block";
+      emptyEl.style.display = "none";
+
+      if (trendChartInstance) trendChartInstance.destroy();
+      trendChartInstance = new Chart(canvas, {
+        type: "bar",
+        data: {
+          labels: trend.map((t) => t.month),
+          datasets: [{
+            label: "Applications",
+            data: trend.map((t) => t.count),
+            backgroundColor: ["#6366f1", "#8795ff", "#b6c0ff", "#687af8", "#4f5dd9"],
+            borderRadius: 8,
+            borderSkipped: false,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { backgroundColor: "#0f172a", padding: 10 } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(148, 163, 184, 0.15)" } }
+          }
+        },
+      });
+    }
+
+    function renderDrivePerformance(drivePerf) {
+      const el = document.getElementById("drivePerformance");
+      if (drivePerf.length === 0) {
+        el.innerHTML = `<div class="state-message">No drives created yet.</div>`;
+        return;
+      }
+
+      el.innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Drive</th><th>Status</th><th>Applicants</th><th>Shortlisted</th>
+              <th>Interviews</th><th>Selected</th><th>Offers</th><th>Remaining Openings</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${drivePerf
+              .map(
+                (d) => `
+              <tr>
+                <td><strong>${d.job_title}</strong> — ${d.company_name}</td>
+                <td><span class="status-badge ${d.status}">${d.status}</span></td>
+                <td>${d.applicants}</td>
+                <td>${d.shortlisted}</td>
+                <td>${d.interviews}</td>
+                <td>${d.selected}</td>
+                <td>${d.offers}</td>
+                <td>${d.remaining_openings}</td>
+              </tr>`
+              )
+              .join("")}
+          </tbody>
+        </table>`;
+    }
+
+    function renderUpcomingInterviews(interviews) {
+      const el = document.getElementById("upcomingInterviews");
+      const today = new Date().toISOString().slice(0, 10);
+      const upcoming = interviews
+        .filter((i) => i.status === "scheduled" && i.date >= today)
+        .sort((a, b) => (a.date + a.start_time).localeCompare(b.date + b.start_time));
+
+      if (upcoming.length === 0) {
+        el.innerHTML = `<div class="state-message">No upcoming interviews.</div>`;
+        return;
+      }
+
+      el.innerHTML = upcoming
+        .slice(0, 6)
+        .map(
+          (i) => `
+          <div class="list-row">
+            <div>
+              <div class="list-row-main">${i.student_name} — ${i.company_name}</div>
+              <div class="list-row-sub">${i.date} | ${i.start_time}-${i.end_time} | ${i.mode}</div>
+            </div>
+            <span class="status-badge ${i.status}">${i.status}</span>
+          </div>`
+        )
+        .join("");
     }
   </script>
 </body>

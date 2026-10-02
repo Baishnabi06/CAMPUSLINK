@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-
+from app.routes.applications import check_eligibility
 from app.database import get_db
 from app.core.deps import require_role
 
@@ -51,6 +51,15 @@ async def recruiter_dashboard_summary(current_user: dict = Depends(require_role(
     hired_count = await db.offers.count_documents(
         {"recruiter_id": recruiter_id, "status": {"$in": ["joining_pending", "joined"]}}
     )
+    selected_count = await db.applications.count_documents(
+        {"drive_id": {"$in": drive_ids}, "status": "selected"}
+    )
+    rejected_count = await db.applications.count_documents(
+        {"drive_id": {"$in": drive_ids}, "status": "rejected"}
+    )
+    applied_count = await db.applications.count_documents(
+        {"drive_id": {"$in": drive_ids}, "status": "applied"}
+    )
 
     return {
         "success": True,
@@ -60,9 +69,16 @@ async def recruiter_dashboard_summary(current_user: dict = Depends(require_role(
             "total_drives": len(drive_ids),
             "applications": applications_count,
             "shortlisted": shortlisted_count,
+            "selected": selected_count,
             "interviews": interviews_count,
             "offers": offers_count,
             "hired": hired_count,
+            "status_breakdown": {
+             "applied": applied_count,
+            "shortlisted": shortlisted_count,
+            "selected": selected_count,
+            "rejected": rejected_count,
+            },
         },
     }
 
@@ -150,3 +166,80 @@ async def officer_placement_analytics(current_user: dict = Depends(require_role(
             "selection_rate": selection_rate,
         },
     }
+
+@router.get("/student/eligible-drives-count")
+async def student_eligible_drives_count(
+    current_user: dict = Depends(require_role("student"))
+):
+    db = get_db()
+
+    student = await db.students.find_one({"user_id": str(current_user["_id"])})
+
+    if not student:
+        return {
+            "success": True,
+            "message": "Eligible drives count fetched",
+            "data": {"count": 0},
+        }
+
+    count = 0
+
+    async for drive in db.drives.find({"status": "open"}):
+        eligible, _ = check_eligibility(student, drive)
+
+        if eligible:
+            count += 1
+
+    return {
+        "success": True,
+        "message": "Eligible drives count fetched",
+        "data": {"count": count},
+    }
+
+
+@router.get("/recruiter/applications-trend")
+async def recruiter_applications_trend(current_user: dict = Depends(require_role("recruiter"))):
+    db = get_db()
+    recruiter_id = str(current_user["_id"])
+    drive_ids = [str(d["_id"]) async for d in db.drives.find({"recruiter_id": recruiter_id})]
+
+    month_counts: dict[str, int] = {}
+    async for app_doc in db.applications.find({"drive_id": {"$in": drive_ids}}):
+        month_key = app_doc["applied_at"].strftime("%Y-%m")
+        month_counts[month_key] = month_counts.get(month_key, 0) + 1
+
+    trend = [{"month": k, "count": v} for k, v in sorted(month_counts.items())]
+    return {"success": True, "message": "Applications trend fetched", "data": trend}
+
+
+@router.get("/recruiter/drive-performance")
+async def recruiter_drive_performance(current_user: dict = Depends(require_role("recruiter"))):
+    db = get_db()
+    recruiter_id = str(current_user["_id"])
+
+    results = []
+    async for drive in db.drives.find({"recruiter_id": recruiter_id}).sort("created_at", -1):
+        drive_id = str(drive["_id"])
+        applicants = await db.applications.count_documents({"drive_id": drive_id})
+        shortlisted = await db.applications.count_documents({"drive_id": drive_id, "status": "shortlisted"})
+        selected = await db.applications.count_documents({"drive_id": drive_id, "status": "selected"})
+        interviews = await db.interviews.count_documents({"drive_id": drive_id})
+        offers = await db.offers.count_documents({"drive_id": drive_id})
+
+        results.append(
+            {
+                "drive_id": drive_id,
+                "job_title": drive["job_title"],
+                "company_name": drive["company_name"],
+                "applicants": applicants,
+                "shortlisted": shortlisted,
+                "interviews": interviews,
+                "selected": selected,
+                "offers": offers,
+                "openings": drive["openings"],
+                "remaining_openings": max(drive["openings"] - offers, 0),
+                "status": drive["status"],
+            }
+        )
+
+    return {"success": True, "message": "Drive performance fetched", "data": results}
