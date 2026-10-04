@@ -13,7 +13,16 @@ from app.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.deps import get_current_user
 from app.core.otp import generate_otp, hash_otp, send_otp_email
-from app.models.schemas import UserRegister, UserLogin, UserOut, Token, UserRole
+from app.models.schemas import (
+    UserRegister,
+    UserLogin,
+    UserOut,
+    Token,
+    UserRole,
+    UserNameUpdate,
+    PasswordChange,
+    AccountDeleteRequest,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -241,3 +250,54 @@ async def logout(current_user: dict = Depends(get_current_user)):
         "message": "Logged out. Please delete the token on the client.",
         "data": {},
     }
+
+@router.patch("/me")
+async def update_my_name(
+    payload: UserNameUpdate, current_user: dict = Depends(get_current_user)
+):
+    db = get_db()
+    await db.users.update_one({"_id": current_user["_id"]}, {"$set": {"name": payload.name}})
+    updated = await db.users.find_one({"_id": current_user["_id"]})
+    return {"success": True, "message": "Name updated", "data": user_to_out(updated)}
+
+
+@router.patch("/change-password")
+async def change_password(
+    payload: PasswordChange, current_user: dict = Depends(get_current_user)
+):
+    if not verify_password(payload.current_password, current_user["password_hash"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    db = get_db()
+    await db.users.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": {"password_hash": hash_password(payload.new_password)}},
+    )
+    return {"success": True, "message": "Password changed successfully", "data": {}}
+
+
+@router.post("/delete-account")
+async def delete_account(
+    payload: AccountDeleteRequest, current_user: dict = Depends(get_current_user)
+):
+    if not verify_password(payload.password, current_user["password_hash"]):
+        raise HTTPException(status_code=400, detail="Password is incorrect")
+
+    db = get_db()
+    user_id = current_user["_id"]
+    role = current_user["role"]
+
+    # Note: this only removes the user + their role-profile document.
+    # Related applications/drives/interviews/offers/documents/notifications
+    # are intentionally left in place — see the conversation note on
+    # cascade-deletion before changing this.
+    if role == "student":
+        await db.students.delete_one({"user_id": str(user_id)})
+    elif role == "recruiter":
+        await db.recruiters.delete_one({"user_id": str(user_id)})
+    elif role == "placement_officer":
+        await db.placement_officers.delete_one({"user_id": str(user_id)})
+
+    await db.users.delete_one({"_id": user_id})
+
+    return {"success": True, "message": "Account deleted", "data": {}}

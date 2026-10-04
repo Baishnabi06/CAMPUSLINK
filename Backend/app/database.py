@@ -14,10 +14,19 @@ async def connect_to_mongo():
 
 
 async def create_indexes():
+
     await db.users.create_index("email", unique=True)
+
     await db.students.create_index("user_id", unique=True)
+
     await db.recruiters.create_index("user_id", unique=True)
+
     await db.placement_officers.create_index("user_id", unique=True)
+
+    # Certification and internship indexes
+    await db.certifications.create_index("student_id")
+
+    await db.internships.create_index("student_id")
 
 
 async def close_mongo_connection():

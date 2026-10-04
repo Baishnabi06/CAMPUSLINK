@@ -145,6 +145,11 @@ function getTopbarMeta(activePage) {
   );
 }
 
+function applyAppearancePreference() {
+  const compact = localStorage.getItem("campuslink_compact_mode") === "true";
+  document.body.classList.toggle("compact-mode", compact);
+}
+
 function renderShell(user, activePage) {
   const shell = document.getElementById("app-shell");
   const pageContent = document.getElementById("page-content");
@@ -271,6 +276,7 @@ function renderShell(user, activePage) {
   };
   // Load unread notification count
   loadUnreadBadge();
+  applyAppearancePreference();;
 }
 
 async function loadUnreadBadge() {

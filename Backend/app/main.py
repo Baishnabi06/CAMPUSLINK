@@ -21,6 +21,8 @@ from app.routes import (
     analytics,
     officer,
     readiness,
+    certifications,
+    internships,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,6 +43,19 @@ app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(demo.router, prefix="/api/demo", tags=["demo"])
 app.include_router(students.router, prefix="/api/students", tags=["students"])
+
+app.include_router(
+    certifications.router,
+    prefix="/api/certifications",
+    tags=["certifications"],
+)
+
+app.include_router(
+    internships.router,
+    prefix="/api/internships",
+    tags=["internships"],
+)
+
 app.include_router(recruiters.router, prefix="/api/recruiters", tags=["recruiters"])
 app.include_router(drives.router, prefix="/api/drives", tags=["drives"])
 app.include_router(applications.router, prefix="/api/applications", tags=["applications"])
