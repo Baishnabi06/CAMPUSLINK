@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     smtp_from: str = ""
     otp_expire_minutes: int = 5
 
+    # Optional: AI-written readiness analysis (leave the key empty to switch it off)
+    anthropic_api_key: str = ""
+    ai_model: str = "claude-haiku-4-5-20251001"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @property

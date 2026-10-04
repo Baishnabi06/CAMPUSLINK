@@ -2,91 +2,1253 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CampusLink — Placement Officer Dashboard</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
+
+  <!-- Styles for this page only (all classes start with "od-") -->
+  <style>
+    .od-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .od-title {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #111827;
+    }
+
+    .od-sub {
+      margin: 4px 0 0;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+
+    .od-btn {
+      margin: 0;
+      padding: 8px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #fff;
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #1f2937;
+      cursor: pointer;
+    }
+
+    .od-btn:hover { background: #f3f4f6; }
+    .od-btn-primary { border-color: #2563eb; background: #2563eb; color: #fff; }
+    .od-btn-primary:hover { background: #1d4ed8; }
+    .od-btn:disabled { opacity: 0.6; cursor: default; }
+
+    .od-btn:focus-visible,
+    .od-close:focus-visible,
+    .od-tab:focus-visible,
+    .od-attn:focus-visible,
+    .od-res:focus-visible {
+      outline: 3px solid #93b4ff;
+      outline-offset: 2px;
+    }
+
+    /* ---------- search ---------- */
+    .od-search {
+      position: relative;
+      margin-bottom: 18px;
+    }
+
+    .od-search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      width: 20px;
+      height: 20px;
+      transform: translateY(-50%);
+      fill: none;
+      stroke: #6b7280;
+      stroke-width: 2;
+      stroke-linecap: round;
+      pointer-events: none;
+    }
+
+    .od-search-input {
+      display: block;
+      width: 100%;
+      height: 52px;
+      padding: 0 56px 0 46px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+      font: inherit;
+      font-size: 1rem;
+      color: #111827;
+    }
+
+    .od-search-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+      outline: 2px solid transparent;
+    }
+
+    .od-kbd {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 2px 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: #f9fafb;
+      font-size: 0.8rem;
+      color: #6b7280;
+      pointer-events: none;
+    }
+
+    .od-results {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 50;
+      max-height: 380px;
+      overflow-y: auto;
+      padding: 6px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 12px 28px rgba(16, 24, 40, 0.14);
+    }
+
+    .od-results[hidden] { display: none; }
+
+    .od-res {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      margin: 0;
+      padding: 10px;
+      border: 0;
+      border-radius: 8px;
+      background: none;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .od-res:hover,
+    .od-res.active { background: #eef3ff; }
+
+    .od-res-main { flex: 1; min-width: 0; }
+    .od-res-name { font-weight: 600; color: #111827; }
+    .od-res-email {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+    .od-res-meta { font-size: 0.82rem; color: #374151; text-align: right; white-space: nowrap; }
+    .od-res-msg { padding: 14px 12px; font-size: 0.9rem; color: #6b7280; }
+    .od-res-err { color: #991b1b; }
+
+    .od-avatar {
+      flex: none;
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* ---------- banner, cards, KPIs ---------- */
+    .od-error {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      background: #fef2f2;
+      font-size: 0.9rem;
+      color: #991b1b;
+    }
+
+    .od-error.show { display: flex; }
+
+    .od-kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .od-kpi,
+    .od-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+    }
+
+    .od-kpi { padding: 18px; }
+
+    .od-kpi-icon {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+    }
+
+    .od-kpi-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .od-kpi-label { margin-top: 14px; font-size: 0.85rem; color: #6b7280; }
+    .od-kpi-value {
+      margin-top: 2px;
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #111827;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .od-c-blue   { background: #dbeafe; color: #1d4ed8; }
+    .od-c-indigo { background: #e0e7ff; color: #4338ca; }
+    .od-c-green  { background: #dcfce7; color: #15803d; }
+    .od-c-amber  { background: #fef3c7; color: #b45309; }
+
+    .od-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .od-span-5 { grid-column: span 5; }
+    .od-span-7 { grid-column: span 7; }
+
+    .od-card {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding: 20px;
+    }
+
+    .od-card h3 { margin: 0; font-size: 1rem; font-weight: 600; color: #111827; }
+    .od-card-sub { margin: 2px 0 18px; font-size: 0.85rem; color: #6b7280; }
+    .od-card-body { display: flex; flex: 1; flex-direction: column; justify-content: center; }
+    .od-foot { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid #f0f2f6; font-size: 0.85rem; color: #6b7280; }
+    .od-foot:empty { display: none; }
+
+    /* horizontal bars */
+    .od-hrow { margin-bottom: 16px; }
+    .od-hrow:last-child { margin-bottom: 0; }
+    .od-hrow-top { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; font-size: 0.9rem; color: #374151; }
+    .od-hrow-top strong { color: #111827; font-variant-numeric: tabular-nums; }
+    .od-hrow-top small { margin-left: 6px; font-size: 0.8rem; color: #6b7280; }
+    .od-htrack { height: 12px; border-radius: 999px; background: #eef1f6; overflow: hidden; }
+    .od-hfill { height: 100%; border-radius: 999px; transition: width 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+    /* donut */
+    .od-donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .od-donut-val { font-size: 30px; font-weight: 700; fill: #111827; }
+    .od-donut-cap { font-size: 12px; fill: #6b7280; }
+
+    .od-legend { width: 100%; margin: 0; padding: 0; list-style: none; }
+    .od-legend li {
+      display: grid;
+      grid-template-columns: 12px minmax(0, 1fr) auto 44px;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid #f0f2f6;
+      font-size: 0.9rem;
+    }
+    .od-legend li:last-child { border-bottom: 0; }
+    .od-dot { width: 12px; height: 12px; border-radius: 4px; }
+    .od-legend-pct { text-align: right; color: #6b7280; font-variant-numeric: tabular-nums; }
+
+    /* attention list */
+    .od-attn-list { display: flex; flex-direction: column; gap: 2px; }
+    .od-attn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      margin: 0;
+      padding: 10px 8px;
+      border: 0;
+      border-radius: 10px;
+      background: none;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .od-attn:hover { background: #f3f6fd; }
+    .od-attn-main { flex: 1; min-width: 0; }
+    .od-attn-name { font-weight: 600; color: #111827; }
+    .od-attn-gap {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+    .od-pill {
+      flex: none;
+      min-width: 44px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* empty + loading */
+    .od-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 30px 0; font-size: 0.9rem; color: #9ca3af; text-align: center; }
+    .od-skel {
+      height: 180px;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #f1f3f7 25%, #e7eaf0 37%, #f1f3f7 63%);
+      background-size: 400% 100%;
+      animation: od-shimmer 1.4s ease infinite;
+    }
+    @keyframes od-shimmer { from { background-position: 100% 50%; } to { background-position: 0 50%; } }
+
+    .od-note { margin: 0; font-size: 0.88rem; color: #6b7280; }
+    .od-note a { color: #1d4ed8; font-weight: 600; }
+
+    /* ---------- student drawer ---------- */
+    .od-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      background: rgba(10, 27, 68, 0.45);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s;
+    }
+    .od-overlay.open { opacity: 1; visibility: visible; }
+
+    .od-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      width: min(620px, 100%);
+      height: 100%;
+      background: #f7f8fb;
+      box-shadow: -12px 0 32px rgba(10, 27, 68, 0.18);
+      transform: translateX(100%);
+      visibility: hidden;
+      transition: transform 0.28s cubic-bezier(0.2, 0.7, 0.2, 1), visibility 0.28s;
+    }
+    .od-drawer.open { transform: none; visibility: visible; }
+
+    .od-drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #fff;
+    }
+    .od-drawer-title { font-weight: 600; color: #111827; }
+    .od-close {
+      margin: 0;
+      padding: 4px 10px;
+      border: 0;
+      border-radius: 8px;
+      background: none;
+      font: inherit;
+      font-size: 1.5rem;
+      line-height: 1;
+      color: #6b7280;
+      cursor: pointer;
+    }
+    .od-close:hover { background: #f3f4f6; color: #111827; }
+    .od-drawer-body { flex: 1; overflow-y: auto; padding: 20px; }
+
+    .od-sec {
+      margin-bottom: 16px;
+      padding: 18px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+    }
+    .od-sec h4 { margin: 0 0 12px; font-size: 0.95rem; font-weight: 600; color: #111827; }
+    .od-sec h5 { margin: 16px 0 8px; font-size: 0.85rem; font-weight: 600; color: #374151; }
+
+    .od-profile { display: flex; align-items: center; gap: 14px; }
+    .od-profile .od-avatar { width: 56px; height: 56px; font-size: 1.1rem; }
+    .od-profile h3 { margin: 0; font-size: 1.2rem; font-weight: 700; color: #111827; }
+    .od-profile a { font-size: 0.9rem; color: #1d4ed8; word-break: break-all; }
+    .od-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .od-chip { padding: 3px 10px; border-radius: 999px; background: #eef1f6; font-size: 0.82rem; color: #374151; }
+
+    .od-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+    .od-b-green { background: #dcfce7; color: #166534; }
+    .od-b-amber { background: #fef3c7; color: #92400e; }
+    .od-b-red   { background: #fee2e2; color: #991b1b; }
+    .od-b-gray  { background: #eef1f6; color: #374151; }
+
+    .od-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .od-fact { padding: 12px; border-radius: 10px; background: #f7f8fb; }
+    .od-fact-label { font-size: 0.8rem; color: #6b7280; }
+    .od-fact-value { margin-top: 2px; font-size: 1.25rem; font-weight: 700; color: #111827; font-variant-numeric: tabular-nums; }
+
+    /* readiness block */
+    .od-ready-top { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
+    .od-ring-fg { transition: stroke-dashoffset 1s cubic-bezier(0.2, 0.7, 0.2, 1); }
+    .od-ring-val { font-size: 30px; font-weight: 700; fill: #111827; }
+    .od-ring-cap { font-size: 11px; fill: #6b7280; }
+    .od-ready-note { margin: 8px 0 0; font-size: 0.88rem; color: #374151; }
+    .od-ready-small { margin: 4px 0 0; font-size: 0.8rem; color: #6b7280; }
+
+    .od-comp { margin-bottom: 12px; }
+    .od-comp-top { display: flex; justify-content: space-between; gap: 12px; font-size: 0.88rem; color: #374151; }
+    .od-comp-top strong { color: #111827; font-variant-numeric: tabular-nums; }
+    .od-comp-detail { margin: 1px 0 5px; font-size: 0.8rem; color: #6b7280; }
+
+    .od-list { margin: 0; padding: 0; list-style: none; }
+    .od-list li { display: flex; gap: 8px; padding: 4px 0; font-size: 0.88rem; color: #374151; }
+    .od-list svg { flex: none; width: 16px; height: 16px; margin-top: 3px; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .od-list .ok svg { stroke: #16a34a; }
+    .od-list .gap svg { stroke: #d97706; }
+
+    .od-recs { margin: 0; padding: 0; list-style: none; counter-reset: rec; }
+    .od-recs li { position: relative; padding: 10px 0 10px 34px; border-bottom: 1px solid #f0f2f6; counter-increment: rec; }
+    .od-recs li:last-child { border-bottom: 0; }
+    .od-recs li::before {
+      content: counter(rec);
+      position: absolute;
+      left: 0;
+      top: 10px;
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #dbeafe;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #1d4ed8;
+    }
+    .od-rec-top { display: flex; justify-content: space-between; gap: 10px; font-weight: 600; font-size: 0.9rem; color: #111827; }
+    .od-rec-pts { flex: none; font-size: 0.8rem; font-weight: 600; color: #15803d; }
+    .od-rec-detail { margin: 2px 0 0; font-size: 0.85rem; color: #6b7280; }
+
+    .od-ai { margin-top: 16px; padding: 14px; border: 1px solid #e0e7ff; border-radius: 10px; background: #f5f7ff; }
+    .od-ai-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: #3730a3; }
+    .od-ai-text { margin: 0; font-size: 0.9rem; line-height: 1.55; color: #1f2937; white-space: pre-line; }
+    .od-ai-meta { margin: 8px 0 0; font-size: 0.78rem; color: #6b7280; }
+    .od-ai-err { margin: 8px 0 0; font-size: 0.85rem; color: #991b1b; }
+
+    /* journey */
+    .od-steps { display: flex; margin: 0; padding: 0; list-style: none; }
+    .od-step { position: relative; flex: 1; text-align: center; font-size: 0.78rem; color: #9ca3af; }
+    .od-step::before { content: ""; position: absolute; top: 13px; left: -50%; width: 100%; height: 2px; background: #e5e7eb; }
+    .od-step:first-child::before { display: none; }
+    .od-step.done::before { background: #2563eb; }
+    .od-step-node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      margin: 0 auto 6px;
+      border: 2px solid #d1d5db;
+      border-radius: 50%;
+      background: #fff;
+    }
+    .od-step-node svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .od-step.done { font-weight: 600; color: #111827; }
+    .od-step.done .od-step-node { border-color: #2563eb; background: #2563eb; }
+
+    /* tabs + records */
+    .od-tabs { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid #e5e7eb; overflow-x: auto; }
+    .od-tab {
+      margin: 0 0 -1px;
+      padding: 8px 12px;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      border-radius: 0;
+      background: none;
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #6b7280;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .od-tab:hover { background: none; color: #111827; }
+    .od-tab.active { border-bottom-color: #2563eb; color: #1d4ed8; }
+    .od-tab small { margin-left: 4px; padding: 1px 7px; border-radius: 999px; background: #eef1f6; font-size: 0.75rem; color: #374151; }
+
+    .od-rec-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f2f6; }
+    .od-rec-item:last-child { border-bottom: 0; }
+    .od-rec-title { font-weight: 600; font-size: 0.9rem; color: #111827; }
+    .od-rec-meta { margin-top: 2px; font-size: 0.82rem; color: #6b7280; }
+    .od-rec-item a { color: #1d4ed8; font-weight: 600; }
+
+    @media (max-width: 1100px) {
+      .od-span-5, .od-span-7 { grid-column: span 12; }
+    }
+
+    @media (max-width: 560px) {
+      .od-facts { grid-template-columns: 1fr; }
+      .od-ready-top { flex-direction: column; align-items: flex-start; }
+      .od-res-meta { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .od-skel { animation: none; }
+      .od-drawer, .od-overlay, .od-hfill, .od-ring-fg { transition: none; }
+    }
+  </style>
 </head>
 <body>
   <div class="app-shell" id="app-shell"></div>
 
   <div id="page-content" style="display: none;">
-    <h2 id="welcomeHeading">Welcome</h2>
-    <div class="dashboard-grid">
-      <div class="stat-card">
-        <div class="stat-label">Total Students</div>
-        <div class="stat-value" id="stat-total-students">—</div>
+
+    <div class="od-head">
+      <div>
+        <h2 class="od-title" id="welcomeHeading">Welcome</h2>
+        <p class="od-sub">Placement overview and student tracking. <span id="odUpdated"></span></p>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Placement-Ready Students</div>
-        <div class="stat-value" id="stat-ready-students">—</div>
+      <button type="button" class="od-btn" data-od="refresh">Refresh</button>
+    </div>
+
+    <!-- Student search -->
+    <div class="od-search">
+      <svg class="od-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="text" id="odSearch" class="od-search-input" autocomplete="off"
+             placeholder="Search a student by name, email or branch"
+             aria-label="Search students" role="combobox" aria-expanded="false" aria-controls="odResults" />
+      <span class="od-kbd" aria-hidden="true">/</span>
+      <div class="od-results" id="odResults" role="listbox" hidden></div>
+    </div>
+
+    <div class="od-error" id="odError" role="alert">
+      <span id="odErrorText"></span>
+      <button type="button" class="od-btn" data-od="refresh">Try again</button>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="od-kpis">
+      <div class="od-kpi">
+        <div class="od-kpi-icon od-c-blue">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div class="od-kpi-label">Total students</div>
+        <div class="od-kpi-value" id="stat-total-students">—</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Active Drives</div>
-        <div class="stat-value" id="stat-active-drives">—</div>
+      <div class="od-kpi">
+        <div class="od-kpi-icon od-c-indigo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/></svg>
+        </div>
+        <div class="od-kpi-label">Active drives</div>
+        <div class="od-kpi-value" id="stat-active-drives">—</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Applications</div>
-        <div class="stat-value" id="stat-applications">—</div>
+      <div class="od-kpi">
+        <div class="od-kpi-icon od-c-green">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="od-kpi-label">Placed students</div>
+        <div class="od-kpi-value" id="stat-placed">—</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Shortlisted Candidates</div>
-        <div class="stat-value" id="stat-shortlisted">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Selected Students</div>
-        <div class="stat-value" id="stat-selected">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Offers</div>
-        <div class="stat-value" id="stat-offers">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Placed Students</div>
-        <div class="stat-value" id="stat-placed">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Pending Joining</div>
-        <div class="stat-value" id="stat-pending-joining">—</div>
+      <div class="od-kpi">
+        <div class="od-kpi-icon od-c-amber">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </div>
+        <div class="od-kpi-label">Pending joining</div>
+        <div class="od-kpi-value" id="stat-pending-joining">—</div>
       </div>
     </div>
-    <div class="card" style="margin-top: 20px;">
-      <p class="placeholder-note">
-        Detailed branch-wise and package analytics are on the Analytics page.
+
+    <!-- Pipeline + readiness overview -->
+    <div class="od-grid">
+      <section class="od-card od-span-7">
+        <h3>Recruitment pipeline</h3>
+        <p class="od-card-sub">How applications move from first application to placement.</p>
+        <div class="od-card-body"><div id="odPipeline"><div class="od-skel"></div></div></div>
+        <p class="od-foot" id="odPipelineNote"></p>
+      </section>
+
+      <section class="od-card od-span-5">
+        <h3>Student readiness</h3>
+        <p class="od-card-sub">Where students stand on the readiness score.</p>
+        <div class="od-card-body"><div id="odReadiness"><div class="od-skel"></div></div></div>
+        <p class="od-foot" id="odReadinessNote"></p>
+      </section>
+    </div>
+
+    <!-- Attention + branches -->
+    <div class="od-grid">
+      <section class="od-card od-span-7">
+        <h3>Students who need attention</h3>
+        <p class="od-card-sub">Lowest readiness scores, excluding students who already hold an offer. Select one to see why.</p>
+        <div class="od-card-body"><div id="odAttention"><div class="od-skel"></div></div></div>
+      </section>
+
+      <section class="od-card od-span-5">
+        <h3>Average readiness by branch</h3>
+        <p class="od-card-sub">Average score out of 100.</p>
+        <div class="od-card-body"><div id="odBranches"><div class="od-skel"></div></div></div>
+      </section>
+    </div>
+
+    <div class="od-card">
+      <p class="od-note">
+        Branch, company and package breakdowns are on the <a href="officer-analytics.html">Analytics page</a>.
+        The readiness score is explained in each student's panel, and the optional AI analysis turns it into advice.
       </p>
     </div>
-    <div class="card" style="margin-top: 20px;">
-      <h3>Predictive Analytics / At-Risk Students / Skill Analytics</h3>
-      <p class="placeholder-note">Reserved for the AI team's prediction and analytics models.</p>
-    </div>
   </div>
+
+  <!-- Student detail drawer (outside page-content so there is only ever one copy) -->
+  <div class="od-overlay" id="odOverlay"></div>
+  <aside class="od-drawer" id="odDrawer" role="dialog" aria-modal="true" aria-labelledby="odDrawerTitle" aria-hidden="true">
+    <div class="od-drawer-head">
+      <div class="od-drawer-title" id="odDrawerTitle">Student details</div>
+      <button type="button" class="od-close" data-od="close" aria-label="Close student details">&times;</button>
+    </div>
+    <div class="od-drawer-body" id="odDrawerBody"></div>
+  </aside>
 
   <script src="../js/api.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/layout.js"></script>
   <script>
-    const user = requireAuth(["placement_officer"]);
-    if (user) {
-      renderShell(user, "officer-dashboard.html");
-      document.getElementById("welcomeHeading").textContent = `Welcome, ${user.name}`;
-      loadSummary();
+    /* ---------- state + helpers (names start with "od" so they can't clash with layout.js) ---------- */
+    const OD = { timer: null, reqId: 0, results: [], active: -1, token: 0, student: null, lastFocus: null };
+
+    const OD_BANDS = {
+      ready:        { label: "Ready",          color: "#16a34a", soft: "#dcfce7", text: "#166534" },
+      almost_ready: { label: "Almost ready",   color: "#2563eb", soft: "#dbeafe", text: "#1d4ed8" },
+      needs_work:   { label: "Needs work",     color: "#f59e0b", soft: "#fef3c7", text: "#92400e" },
+      at_risk:      { label: "At risk",        color: "#dc2626", soft: "#fee2e2", text: "#991b1b" },
+      offer:        { label: "Offer received", color: "#7c3aed", soft: "#ede9fe", text: "#5b21b6" },
+    };
+    const OD_AVATARS = ["#2563eb", "#7c3aed", "#0d9488", "#d97706", "#db2777", "#4f46e5", "#0284c7"];
+
+    function odEsc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function odNum(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
+    function odFmt(v, max = 1) { return odNum(v).toLocaleString("en-IN", { maximumFractionDigits: max }); }
+    function odSet(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
+    function odHas(v) { return v !== undefined && v !== null && v !== ""; }
+    function odPick(obj, keys) {
+      if (!obj || typeof obj !== "object") return "";
+      for (const k of keys) if (odHas(obj[k])) return obj[k];
+      return "";
+    }
+    function odItemLabel(x) {
+      if (x && typeof x === "object") return String(odPick(x, ["title", "name", "skill", "label"]) || "");
+      return String(x ?? "");
+    }
+    function odDate(v, withTime) {
+      if (!odHas(v)) return "";
+      const d = new Date(v);
+      if (isNaN(d)) return String(v);
+      const opts = { day: "numeric", month: "short", year: "numeric" };
+      if (withTime) Object.assign(opts, { hour: "numeric", minute: "2-digit" });
+      return d.toLocaleString("en-IN", opts);
+    }
+    function odInitials(name) {
+      const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
+      return ((parts[0] || "?")[0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+    }
+    function odAvatar(name) {
+      let h = 0;
+      for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      return `<span class="od-avatar" style="background:${OD_AVATARS[h % OD_AVATARS.length]}" aria-hidden="true">${odEsc(odInitials(name))}</span>`;
+    }
+    function odBand(item) { return item.has_offer ? OD_BANDS.offer : (OD_BANDS[item.band] || OD_BANDS.at_risk); }
+    function odBadge(status) {
+      const s = String(status || "");
+      if (!s) return "";
+      let cls = "od-b-gray";
+      if (/select|accept|placed|join|offer|hired|complete|approved|verified/i.test(s)) cls = "od-b-green";
+      else if (/reject|declin|withdraw|fail|cancel|expired/i.test(s)) cls = "od-b-red";
+      else if (/shortlist|pending|schedul|progress|review|applied|upcoming/i.test(s)) cls = "od-b-amber";
+      const text = s.replace(/_/g, " ");
+      return `<span class="od-badge ${cls}">${odEsc(text.charAt(0).toUpperCase() + text.slice(1))}</span>`;
+    }
+    function odFileUrl(u) {
+      if (!odHas(u)) return "";
+      const s = String(u).trim();
+      if (/^(javascript|data|vbscript):/i.test(s)) return "";
+      if (/^https?:\/\//i.test(s)) return s;
+      return API_BASE_URL + (s.startsWith("/") ? "" : "/") + s;
+    }
+    function odEmpty(msg) {
+      return `<div class="od-empty"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>${odEsc(msg)}</span></div>`;
+    }
+    function odAnimate(root) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        root.querySelectorAll("[data-offset]").forEach((el) => { el.style.strokeDashoffset = el.dataset.offset; });
+        root.querySelectorAll("[data-w]").forEach((el) => { el.style.width = el.dataset.w; });
+      }));
+    }
+    function odRing(score, color, size, caption) {
+      const r = 54, c = 2 * Math.PI * r;
+      const p = Math.max(0, Math.min(100, odNum(score)));
+      return `<svg viewBox="0 0 140 140" width="${size}" height="${size}" role="img" aria-label="Score ${odFmt(p, 0)} out of 100">
+        <circle cx="70" cy="70" r="${r}" fill="none" stroke="#eef1f6" stroke-width="14"/>
+        <circle class="od-ring-fg" cx="70" cy="70" r="${r}" fill="none" stroke="${color}" stroke-width="14" stroke-linecap="round"
+                stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${c.toFixed(2)}" data-offset="${(c * (1 - p / 100)).toFixed(2)}" transform="rotate(-90 70 70)"/>
+        <text class="od-ring-val" x="70" y="76" text-anchor="middle">${odFmt(p, 0)}</text>
+        <text class="od-ring-cap" x="70" y="94" text-anchor="middle">${odEsc(caption || "out of 100")}</text></svg>`;
+    }
+
+    /* ---------- dashboard sections ---------- */
+    function odRenderKpis(d) {
+      odSet("stat-total-students", odFmt(d.total_students, 0));
+      odSet("stat-active-drives", odFmt(d.active_drives, 0));
+      odSet("stat-placed", odFmt(d.placed_students, 0));
+      odSet("stat-pending-joining", odFmt(d.pending_joining, 0));
+    }
+
+    function odRenderPipeline(d) {
+      const el = document.getElementById("odPipeline");
+      if (!el) return;
+      const stages = [
+        ["Applications", d.total_applications, "#2563eb"],
+        ["Shortlisted", d.shortlisted, "#6366f1"],
+        ["Selected", d.selected_students, "#14b8a6"],
+        ["Offers", d.total_offers, "#f59e0b"],
+        ["Placed", d.placed_students, "#22c55e"],
+      ];
+      const base = odNum(d.total_applications);
+      const max = Math.max(...stages.map((s) => odNum(s[1])), 1);
+      if (stages.every((s) => odNum(s[1]) === 0)) {
+        el.innerHTML = odEmpty("No applications yet.");
+        odSet("odPipelineNote", "");
+        return;
+      }
+      el.innerHTML = stages.map(([label, v, color], i) => {
+        const pct = i > 0 && base > 0 ? `<small>${odFmt((odNum(v) / base) * 100, 0)}% of applications</small>` : "";
+        return `<div class="od-hrow">
+          <div class="od-hrow-top"><span>${label}${pct}</span><strong>${odFmt(v, 0)}</strong></div>
+          <div class="od-htrack"><div class="od-hfill" style="width:0;background:${color}" data-w="${((odNum(v) / max) * 100).toFixed(1)}%"></div></div></div>`;
+      }).join("");
+      odAnimate(el);
+      odSet("odPipelineNote", `${odFmt(d.total_students, 0)} students, ${odFmt(d.placement_ready_students, 0)} marked placement-ready in the placement records.`);
+    }
+
+    function odRenderReadiness(o) {
+      const el = document.getElementById("odReadiness");
+      if (!el) return;
+      if (!o.total) {
+        el.innerHTML = odEmpty("No students registered yet.");
+        odSet("odReadinessNote", "");
+        return;
+      }
+      const order = ["ready", "almost_ready", "needs_work", "at_risk", "offer"];
+      const r = 70, sw = 26, c = 2 * Math.PI * r;
+      let offset = 0;
+      const items = order.map((k) => ({ key: k, v: odNum(o.bands[k]), ...OD_BANDS[k] }));
+      const total = items.reduce((s, it) => s + it.v, 0) || 1;
+      const segs = items.filter((it) => it.v > 0).map((it) => {
+        const len = (it.v / total) * c;
+        const gap = items.filter((x) => x.v > 0).length > 1 ? Math.min(3, len * 0.2) : 0;
+        const draw = Math.max(len - gap, 0);
+        const seg = `<circle cx="100" cy="100" r="${r}" fill="none" stroke="${it.color}" stroke-width="${sw}"
+          stroke-dasharray="${draw.toFixed(2)} ${(c - draw).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 100 100)">
+          <title>${odEsc(it.label)}: ${it.v}</title></circle>`;
+        offset += len;
+        return seg;
+      }).join("");
+      const legend = items.map((it) => `<li><span class="od-dot" style="background:${it.color}"></span><span>${odEsc(it.label)}</span>
+        <strong>${it.v}</strong><span class="od-legend-pct">${odFmt((it.v / total) * 100, 0)}%</span></li>`).join("");
+      el.innerHTML = `<div class="od-donut-wrap">
+        <svg viewBox="0 0 200 200" width="190" height="190" role="img" aria-label="Students by readiness band">
+          <circle cx="100" cy="100" r="${r}" fill="none" stroke="#eef1f6" stroke-width="${sw}"/>${segs}
+          <text class="od-donut-val" x="100" y="104" text-anchor="middle">${odFmt(o.average, 0)}</text>
+          <text class="od-donut-cap" x="100" y="124" text-anchor="middle">average score</text></svg>
+        <ul class="od-legend">${legend}</ul></div>`;
+      const notes = [];
+      if (!o.activity_tracked) notes.push("Application tracking is not connected, so scores use profile data only.");
+      odSet("odReadinessNote", notes.join(" "));
+    }
+
+    function odRenderAttention(o) {
+      const el = document.getElementById("odAttention");
+      if (!el) return;
+      if (!o.total) { el.innerHTML = odEmpty("No students registered yet."); return; }
+      if (!o.attention.length) { el.innerHTML = odEmpty("Everyone without an offer is on track."); return; }
+      el.innerHTML = `<div class="od-attn-list">` + o.attention.map((s) => {
+        const b = odBand(s);
+        return `<button type="button" class="od-attn" data-od-student="${odEsc(s.id)}">
+          ${odAvatar(s.name)}
+          <span class="od-attn-main">
+            <span class="od-attn-name">${odEsc(s.name)}</span>
+            <span class="od-attn-gap" style="display:block">${odEsc(s.branch || "Branch not set")}${s.top_gap ? ". " + odEsc(s.top_gap) : ""}</span>
+          </span>
+          <span class="od-pill" style="background:${b.soft};color:${b.text}" title="${odEsc(b.label)}">${odFmt(s.score, 0)}</span>
+        </button>`;
+      }).join("") + `</div>`;
+    }
+
+    function odRenderBranches(o) {
+      const el = document.getElementById("odBranches");
+      if (!el) return;
+      if (!o.by_branch.length) { el.innerHTML = odEmpty("No branch data yet."); return; }
+      el.innerHTML = o.by_branch.map((b) => `<div class="od-hrow">
+        <div class="od-hrow-top"><span>${odEsc(b.branch)}<small>${b.count} ${b.count === 1 ? "student" : "students"}</small></span><strong>${odFmt(b.average, 1)}</strong></div>
+        <div class="od-htrack"><div class="od-hfill" style="width:0;background:#2563eb" data-w="${Math.max(0, Math.min(100, odNum(b.average))).toFixed(1)}%"></div></div></div>`).join("");
+      odAnimate(el);
+    }
+
+    /* ---------- loading ---------- */
+    const odErrors = {};
+    function odShowErrors() {
+      const msgs = Object.values(odErrors).filter(Boolean);
+      odSet("odErrorText", msgs.join(" "));
+      const box = document.getElementById("odError");
+      if (box) box.classList.toggle("show", msgs.length > 0);
     }
 
     async function loadSummary() {
       try {
         const res = await apiFetch("/api/analytics/officer/summary");
-        const d = res.data;
-        document.getElementById("stat-total-students").textContent = d.total_students;
-        document.getElementById("stat-ready-students").textContent = d.placement_ready_students;
-        document.getElementById("stat-active-drives").textContent = d.active_drives;
-        document.getElementById("stat-applications").textContent = d.total_applications;
-        document.getElementById("stat-shortlisted").textContent = d.shortlisted;
-        document.getElementById("stat-selected").textContent = d.selected_students;
-        document.getElementById("stat-offers").textContent = d.total_offers;
-        document.getElementById("stat-placed").textContent = d.placed_students;
-        document.getElementById("stat-pending-joining").textContent = d.pending_joining;
+        if (!res) return;
+        odErrors.summary = "";
+        odRenderKpis(res.data);
+        odRenderPipeline(res.data);
       } catch (err) {
-        // Leave dashes on failure
+        odErrors.summary = "Could not load the summary: " + err.message + ".";
+        const el = document.getElementById("odPipeline");
+        if (el) el.innerHTML = odEmpty("No data to show.");
       }
+    }
+
+    async function loadReadiness() {
+      try {
+        const res = await apiFetch("/api/readiness/overview");
+        if (!res) return;
+        odErrors.readiness = "";
+        odRenderReadiness(res.data);
+        odRenderAttention(res.data);
+        odRenderBranches(res.data);
+      } catch (err) {
+        odErrors.readiness = "Could not load readiness scores: " + err.message + ".";
+        ["odReadiness", "odAttention", "odBranches"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.innerHTML = odEmpty("No data to show.");
+        });
+      }
+    }
+
+    async function loadDashboard() {
+      ["odPipeline", "odReadiness", "odAttention", "odBranches"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="od-skel"></div>';
+      });
+      await Promise.all([loadSummary(), loadReadiness()]);
+      odShowErrors();
+      odSet("odUpdated", "Updated " + new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }) + ".");
+    }
+
+    /* ---------- search ---------- */
+    function odResultsBox() { return document.getElementById("odResults"); }
+
+    function odShowResults(html) {
+      const box = odResultsBox();
+      const input = document.getElementById("odSearch");
+      if (!box) return;
+      box.innerHTML = html;
+      box.hidden = false;
+      if (input) input.setAttribute("aria-expanded", "true");
+    }
+    function odCloseResults() {
+      const box = odResultsBox();
+      const input = document.getElementById("odSearch");
+      if (box) { box.hidden = true; box.innerHTML = ""; }
+      if (input) input.setAttribute("aria-expanded", "false");
+      OD.results = [];
+      OD.active = -1;
+    }
+
+    function odRenderResults() {
+      if (!OD.results.length) return;
+      odShowResults(OD.results.map((s, i) => `<button type="button" class="od-res${i === OD.active ? " active" : ""}" role="option"
+          aria-selected="${i === OD.active}" data-od-student="${odEsc(s.id)}">
+          ${odAvatar(s.name)}
+          <span class="od-res-main"><span class="od-res-name">${odEsc(s.name)}</span><span class="od-res-email" style="display:block">${odEsc(s.email)}</span></span>
+          <span class="od-res-meta">${odEsc(s.branch || "No branch")}${odHas(s.cgpa) ? "<br>CGPA " + odEsc(s.cgpa) : ""}</span></button>`).join(""));
+    }
+
+    async function odSearch(q) {
+      const id = ++OD.reqId;
+      odShowResults('<div class="od-res-msg">Searching…</div>');
+      try {
+        const res = await apiFetch(`/api/officer/students?q=${encodeURIComponent(q)}&limit=8`);
+        if (id !== OD.reqId || !res) return; // a newer search replaced this one
+        OD.results = res.data || [];
+        OD.active = OD.results.length ? 0 : -1;
+        if (!OD.results.length) {
+          odShowResults(`<div class="od-res-msg">No student found for “${odEsc(q)}”.</div>`);
+        } else {
+          odRenderResults();
+        }
+      } catch (err) {
+        if (id === OD.reqId) odShowResults(`<div class="od-res-msg od-res-err">${odEsc(err.message)}</div>`);
+      }
+    }
+
+    function odOnInput(input) {
+      const q = input.value.trim();
+      clearTimeout(OD.timer);
+      if (q.length < 2) { OD.reqId++; odCloseResults(); return; }
+      OD.timer = setTimeout(() => odSearch(q), 280);
+    }
+
+    function odOnSearchKey(e) {
+      if (e.key === "Escape") { odCloseResults(); return; }
+      if (!OD.results.length) return;
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const n = OD.results.length;
+        OD.active = (OD.active + (e.key === "ArrowDown" ? 1 : -1) + n) % n;
+        odRenderResults();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const s = OD.results[Math.max(OD.active, 0)];
+        if (s) odOpenStudent(s.id);
+      }
+    }
+
+    /* ---------- student drawer ---------- */
+    function odOpenDrawer() {
+      OD.lastFocus = document.activeElement;
+      document.getElementById("odOverlay").classList.add("open");
+      const drawer = document.getElementById("odDrawer");
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      const close = drawer.querySelector(".od-close");
+      if (close) close.focus();
+    }
+
+    function odCloseDrawer() {
+      OD.token++; // ignore any answers still on the way
+      document.getElementById("odOverlay").classList.remove("open");
+      const drawer = document.getElementById("odDrawer");
+      drawer.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+      if (OD.lastFocus && OD.lastFocus.focus) OD.lastFocus.focus();
+    }
+
+    async function odOpenStudent(id) {
+      odCloseResults();
+      const token = ++OD.token;
+      OD.student = null;
+      odOpenDrawer();
+      const body = document.getElementById("odDrawerBody");
+      body.innerHTML = '<div class="od-skel" style="height:90px;margin-bottom:16px"></div><div class="od-skel" style="height:260px"></div>';
+      odSet("odDrawerTitle", "Student details");
+
+      const [detail, ready] = await Promise.allSettled([
+        apiFetch(`/api/officer/students/${encodeURIComponent(id)}`),
+        apiFetch(`/api/readiness/student/${encodeURIComponent(id)}`),
+      ]);
+      if (token !== OD.token) return;
+
+      if (detail.status !== "fulfilled" || !detail.value) {
+        const msg = detail.status === "rejected" ? detail.reason.message : "Could not load this student.";
+        body.innerHTML = odEmpty(msg);
+        return;
+      }
+      OD.student = detail.value.data.profile;
+      odSet("odDrawerTitle", OD.student.name || "Student details");
+      body.innerHTML = odRenderStudent(
+        detail.value.data,
+        ready.status === "fulfilled" && ready.value ? ready.value.data : null,
+        ready.status === "rejected" ? ready.reason.message : ""
+      );
+      odAnimate(body);
+    }
+
+    function odIcon(kind) {
+      return kind === "ok"
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>'
+        : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>';
+    }
+
+    function odRenderReadinessBlock(r, err) {
+      if (!r) {
+        return `<section class="od-sec"><h4>Readiness score</h4><p class="od-ai-err">${odEsc(err || "Readiness score is not available.")}</p></section>`;
+      }
+      const b = odBand(r);
+      const note = r.has_offer
+        ? "This student already holds an offer."
+        : (r.potential_score > r.score ? `Could reach about ${r.potential_score} by completing the top actions below.` : "No outstanding actions.");
+
+      const comps = r.components.map((c) => c.available
+        ? `<div class="od-comp">
+            <div class="od-comp-top"><span>${odEsc(c.label)}</span><strong>${odFmt(c.score, 1)} / ${c.max}</strong></div>
+            <div class="od-comp-detail">${odEsc(c.detail)}</div>
+            <div class="od-htrack"><div class="od-hfill" style="width:0;background:${b.color}" data-w="${(c.max ? (odNum(c.score) / c.max) * 100 : 0).toFixed(1)}%"></div></div></div>`
+        : `<div class="od-comp"><div class="od-comp-top"><span>${odEsc(c.label)}</span><strong>Not tracked</strong></div>
+            <div class="od-comp-detail">${odEsc(c.detail)}. Left out of the score.</div></div>`).join("");
+
+      const strengths = r.strengths.length
+        ? `<h5>Strengths</h5><ul class="od-list">${r.strengths.map((s) => `<li class="ok">${odIcon("ok")}<span>${odEsc(s)}</span></li>`).join("")}</ul>` : "";
+      const gaps = r.gaps.length
+        ? `<h5>Gaps</h5><ul class="od-list">${r.gaps.map((s) => `<li class="gap">${odIcon("gap")}<span>${odEsc(s)}</span></li>`).join("")}</ul>` : "";
+      const recs = r.recommendations.length
+        ? `<h5>What to do next</h5><ol class="od-recs">${r.recommendations.map((x) => `<li>
+            <div class="od-rec-top"><span>${odEsc(x.title)}</span><span class="od-rec-pts">+${odFmt(x.potential, 0)} pts</span></div>
+            <p class="od-rec-detail">${odEsc(x.detail)}</p></li>`).join("")}</ol>` : "";
+
+      let ai;
+      if (r.analysis) {
+        ai = odAiHtml(r.analysis);
+      } else if (r.ai_available) {
+        ai = `<div class="od-ai"><div class="od-ai-head"><span>AI analysis</span>
+          <button type="button" class="od-btn od-btn-primary" data-od="ai">Generate AI analysis</button></div>
+          <p class="od-ai-meta" id="odAiOut">Turns the score into a short plain-language assessment. Only scores and counts are sent, never the student's name or email.</p></div>`;
+      } else {
+        ai = `<div class="od-ai"><div class="od-ai-head"><span>AI analysis</span></div>
+          <p class="od-ai-meta">Not switched on. Add ANTHROPIC_API_KEY to the backend .env file and restart the server to enable it.</p></div>`;
+      }
+
+      return `<section class="od-sec">
+        <h4>Readiness score</h4>
+        <div class="od-ready-top">
+          ${odRing(r.score, b.color, 120)}
+          <div>
+            <span class="od-badge" style="background:${b.soft};color:${b.text}">${odEsc(b.label)}</span>
+            ${r.has_offer ? `<span class="od-badge od-b-gray" style="margin-left:6px">${odEsc(r.band_label)} on profile</span>` : ""}
+            <p class="od-ready-note">${odEsc(note)}</p>
+            <p class="od-ready-small">Built from academics, skills, projects, certifications, profile and activity.</p>
+          </div>
+        </div>
+        ${comps}${strengths}${gaps}${recs}${ai}
+      </section>`;
+    }
+
+    function odAiHtml(a) {
+      const when = odDate(a.generated_at, true);
+      return `<div class="od-ai"><div class="od-ai-head"><span>AI analysis</span></div>
+        <p class="od-ai-text" id="odAiOut">${odEsc(a.summary)}</p>
+        <p class="od-ai-meta">AI-generated from the student's current data${when ? ", " + odEsc(when) : ""}. Check it before sharing.</p></div>`;
+    }
+
+    async function odGenerateAi(btn) {
+      const id = OD.student && OD.student.id;
+      if (!id) return;
+      const token = OD.token;
+      btn.disabled = true;
+      btn.textContent = "Analyzing…";
+      try {
+        const res = await apiFetch(`/api/readiness/student/${encodeURIComponent(id)}/analysis`, { method: "POST" });
+        if (!res || token !== OD.token) return;
+        const holder = btn.closest(".od-ai");
+        if (holder) holder.outerHTML = odAiHtml(res.data);
+      } catch (err) {
+        if (token !== OD.token) return;
+        btn.disabled = false;
+        btn.textContent = "Try again";
+        const out = document.getElementById("odAiOut");
+        if (out) { out.className = "od-ai-err"; out.textContent = err.message; }
+      }
+    }
+
+    /* journey: what this student has reached so far, based on their records */
+    function odJourney(t) {
+      const list = (x) => (Array.isArray(x) ? x : []);
+      const status = (x) => String(odPick(x, ["status", "stage"]) || "");
+      const any = (rows, re) => list(rows).some((x) => re.test(status(x)));
+      if (!t || [t.applications, t.interviews, t.offers].every((x) => x === null || x === undefined)) return "";
+      const applied = list(t.applications).length > 0;
+      const interview = list(t.interviews).length > 0;
+      const shortlisted = any(t.applications, /shortlist|select|offer|hire|placed/i) || interview;
+      const offer = list(t.offers).length > 0;
+      const placed = any(t.offers, /accept|join|placed/i) || any(t.applications, /placed/i);
+      const steps = [["Applied", applied], ["Shortlisted", shortlisted], ["Interview", interview], ["Offer", offer], ["Placed", placed]];
+      return `<section class="od-sec"><h4>Placement journey</h4><ol class="od-steps">${steps.map(([label, done]) =>
+        `<li class="od-step${done ? " done" : ""}"><span class="od-step-node">${done ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>' : ""}</span>${label}</li>`).join("")}</ol></section>`;
+    }
+
+    function odDriveLine(rec) {
+      const drive = rec.drive || {};
+      const company = odPick(drive, ["company_name", "company"]) || odPick(rec, ["company_name", "company"]);
+      const role = odPick(drive, ["title", "role", "job_title", "name"]) || odPick(rec, ["title", "role", "job_title"]);
+      return { title: String(role || company || "Drive"), company: role && company ? String(company) : "" };
+    }
+
+    function odTrackItems(kind, rows) {
+      if (rows === null || rows === undefined) return odEmpty("This section is not connected to the backend yet.");
+      if (!rows.length) return odEmpty({ applications: "No applications yet.", interviews: "No interviews yet.", offers: "No offers yet.", documents: "No documents uploaded." }[kind]);
+      return rows.map((rec) => {
+        if (kind === "documents") {
+          const name = odPick(rec, ["name", "title", "filename", "document_type", "type"]) || "Document";
+          const type = odPick(rec, ["document_type", "type"]);
+          const url = odFileUrl(odPick(rec, ["url", "file_url", "path", "file_path"]));
+          const date = odDate(odPick(rec, ["uploaded_at", "created_at", "date"]));
+          return `<div class="od-rec-item"><div><div class="od-rec-title">${odEsc(name)}</div>
+            <div class="od-rec-meta">${[type && type !== name ? odEsc(type) : "", date ? odEsc(date) : ""].filter(Boolean).join(", ")}</div></div>
+            ${url ? `<a href="${odEsc(url)}" target="_blank" rel="noopener">Open</a>` : ""}</div>`;
+        }
+        const line = odDriveLine(rec);
+        const status = odPick(rec, ["status", "stage"]);
+        let meta = [];
+        if (line.company) meta.push(odEsc(line.company));
+        if (kind === "applications") {
+          const d = odDate(odPick(rec, ["applied_at", "created_at", "date"]));
+          if (d) meta.push("Applied " + odEsc(d));
+        } else if (kind === "interviews") {
+          const d = odDate(odPick(rec, ["scheduled_at", "interview_date", "scheduled_for", "date", "start_time", "slot"]), true);
+          const mode = odPick(rec, ["mode", "type", "round", "location"]);
+          if (d) meta.push(odEsc(d));
+          if (mode) meta.push(odEsc(mode));
+        } else if (kind === "offers") {
+          const pkg = odPick(rec, ["package", "ctc", "package_lpa", "salary"]);
+          if (odHas(pkg)) meta.push(typeof pkg === "number" ? `${odFmt(pkg, 2)} LPA` : odEsc(pkg));
+          const d = odDate(odPick(rec, ["offered_at", "created_at", "date"]));
+          if (d) meta.push(odEsc(d));
+        }
+        return `<div class="od-rec-item"><div><div class="od-rec-title">${odEsc(line.title)}</div>
+          <div class="od-rec-meta">${meta.join(", ")}</div></div>${odBadge(status)}</div>`;
+      }).join("");
+    }
+
+    function odTrackingBlock(t) {
+      const kinds = [["applications", "Applications"], ["interviews", "Interviews"], ["offers", "Offers"], ["documents", "Documents"]];
+      const tabs = kinds.map(([k, label], i) => {
+        const n = t && Array.isArray(t[k]) ? t[k].length : "–";
+        return `<button type="button" class="od-tab${i === 0 ? " active" : ""}" data-od-tab="${k}">${label}<small>${n}</small></button>`;
+      }).join("");
+      const panels = kinds.map(([k], i) => `<div data-od-panel="${k}"${i === 0 ? "" : " hidden"}>${odTrackItems(k, t ? t[k] : null)}</div>`).join("");
+      return `<section class="od-sec"><h4>Tracking</h4><div class="od-tabs">${tabs}</div>${panels}</section>`;
+    }
+
+    function odFileLink(url, label) {
+      const u = odFileUrl(url);
+      return u ? `<a class="od-btn" style="display:inline-block;text-decoration:none" href="${odEsc(u)}" target="_blank" rel="noopener">${odEsc(label)}</a>` : "";
+    }
+
+    function odRenderStudent(detail, ready, readyErr) {
+      const p = detail.profile;
+      const skills = (p.skills || []).map(odItemLabel).filter(Boolean);
+      const certs = (p.certifications || []).map(odItemLabel).filter(Boolean);
+      const projects = (p.projects || []).map(odItemLabel).filter(Boolean);
+      const chips = [];
+      if (p.branch) chips.push(`<span class="od-chip">${odEsc(p.branch)}</span>`);
+      chips.push(`<span class="od-badge ${p.is_active ? "od-b-green" : "od-b-red"}">${p.is_active ? "Active" : "Deactivated"}</span>`);
+      chips.push(`<span class="od-badge ${p.profile_completed ? "od-b-green" : "od-b-amber"}">${p.profile_completed ? "Profile complete" : "Profile incomplete"}</span>`);
+
+      const list = (rows, empty) => rows.length
+        ? `<ul class="od-list">${rows.map((x) => `<li><span>${odEsc(x)}</span></li>`).join("")}</ul>`
+        : `<p class="od-rec-meta">${empty}</p>`;
+
+      return `
+        <section class="od-sec">
+          <div class="od-profile">${odAvatar(p.name)}
+            <div><h3>${odEsc(p.name)}</h3><a href="mailto:${odEsc(p.email)}">${odEsc(p.email)}</a></div></div>
+          <div class="od-chips">${chips.join("")}</div>
+        </section>
+        ${odRenderReadinessBlock(ready, readyErr)}
+        ${odJourney(detail.tracking)}
+        <section class="od-sec">
+          <h4>Academic snapshot</h4>
+          <div class="od-facts">
+            <div class="od-fact"><div class="od-fact-label">CGPA</div><div class="od-fact-value">${odHas(p.cgpa) ? odEsc(p.cgpa) : "—"}</div></div>
+            <div class="od-fact"><div class="od-fact-label">Backlogs</div><div class="od-fact-value">${odFmt(p.backlogs, 0)}</div></div>
+            <div class="od-fact"><div class="od-fact-label">Registered</div><div class="od-fact-value" style="font-size:0.95rem">${odEsc(odDate(p.created_at) || "—")}</div></div>
+          </div>
+          <h5>Skills</h5>
+          ${skills.length ? `<div class="od-chips" style="margin-top:0">${skills.map((s) => `<span class="od-chip">${odEsc(s)}</span>`).join("")}</div>` : '<p class="od-rec-meta">No skills added.</p>'}
+          <h5>Certifications</h5>${list(certs, "No certifications added.")}
+          <h5>Projects</h5>${list(projects, "No projects added.")}
+          <h5>Resume</h5>${odFileLink(p.resume_url, "Open resume") || '<p class="od-rec-meta">No resume uploaded.</p>'}
+        </section>
+        ${odTrackingBlock(detail.tracking)}`;
+    }
+
+    /* ---------- events (delegated, so they work wherever layout.js puts this content) ---------- */
+    document.addEventListener("input", (e) => {
+      if (e.target && e.target.id === "odSearch") odOnInput(e.target);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.target && e.target.id === "odSearch") { odOnSearchKey(e); return; }
+      if (e.key === "Escape" && document.getElementById("odDrawer").classList.contains("open")) { odCloseDrawer(); return; }
+      const tag = e.target && e.target.tagName;
+      if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(tag || "") && !(e.target && e.target.isContentEditable)) {
+        const input = document.getElementById("odSearch");
+        if (input) { e.preventDefault(); input.focus(); }
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      const t = e.target;
+      if (!t || !t.closest) return;
+
+      const stu = t.closest("[data-od-student]");
+      if (stu) { odOpenStudent(stu.dataset.odStudent); return; }
+
+      const tab = t.closest("[data-od-tab]");
+      if (tab) {
+        const body = document.getElementById("odDrawerBody");
+        body.querySelectorAll("[data-od-tab]").forEach((b) => b.classList.toggle("active", b === tab));
+        body.querySelectorAll("[data-od-panel]").forEach((p) => { p.hidden = p.dataset.odPanel !== tab.dataset.odTab; });
+        return;
+      }
+
+      const action = t.closest("[data-od]");
+      if (action) {
+        const kind = action.dataset.od;
+        if (kind === "close") odCloseDrawer();
+        else if (kind === "refresh") loadDashboard();
+        else if (kind === "ai") odGenerateAi(action);
+        return;
+      }
+
+      if (t.id === "odOverlay") { odCloseDrawer(); return; }
+      if (!t.closest(".od-search")) odCloseResults();
+    });
+
+    /* ---------- start ---------- */
+    const user = requireAuth(["placement_officer"]);
+    if (user) {
+      renderShell(user, "officer-dashboard.html");
+      odSet("welcomeHeading", `Welcome, ${user.name}`);
+      loadDashboard();
     }
   </script>
 </body>

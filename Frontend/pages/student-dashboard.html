@@ -6,6 +6,31 @@
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <!-- Makes a KPI card behave like a link (used by the Readiness Score card) -->
+  <style>
+    a.kpi-card {
+      color: inherit;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    a.kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(16, 24, 40, 0.12);
+    }
+
+    a.kpi-card:focus-visible {
+      outline: 3px solid #93b4ff;
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      a.kpi-card { transition: none; }
+      a.kpi-card:hover { transform: none; }
+    }
+  </style>
 </head>
 <body>
   <div class="app-shell" id="app-shell"></div>
@@ -62,9 +87,10 @@
       </div>
 
       <div class="card ai-card">
-        <h3>AI Readiness Score</h3>
-        <p class="placeholder-note">Personalized readiness insights will appear here once the AI scoring engine is connected.</p>
-        <span class="coming-soon">Coming Soon</span>
+        <h3>Readiness Score</h3>
+        <div id="readinessCardBody">
+          <div class="state-message"><span class="spinner"></span>Loading...</div>
+        </div>
       </div>
       <div class="card ai-card">
         <h3>Skill Gap Analysis</h3>
@@ -83,9 +109,26 @@
   <script src="../js/auth.js"></script>
   <script src="../js/layout.js"></script>
   <script>
-    const user = requireAuth(["student"]);
     let statusChartInstance = null;
     let trendChartInstance = null;
+
+    // Readiness helpers (defined before the page starts so they are always ready)
+    const RD_PAGE = "student-readiness.html";
+    const RD_BANDS = {
+      ready: ["Ready", "#16a34a"],
+      almost_ready: ["Almost ready", "#2563eb"],
+      needs_work: ["Needs work", "#d97706"],
+      at_risk: ["Needs attention", "#dc2626"],
+      offer: ["Offer received", "#7c3aed"],
+    };
+    function rdBand(r) {
+      return r.has_offer ? RD_BANDS.offer : (RD_BANDS[r.band] || RD_BANDS.needs_work);
+    }
+    function rdEsc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    const user = requireAuth(["student"]);
 
     if (user) {
       renderShell(user, "student-dashboard.html");
@@ -95,7 +138,7 @@
     }
 
     async function loadStudentDashboard() {
-      let applications = [], interviews = [], offers = [], openDrives = [], summary = null, eligibleCount = null;
+      let applications = [], interviews = [], offers = [], openDrives = [], summary = null, eligibleCount = null, readiness = null;
 
       try {
         const [appsRes, interviewsRes, offersRes, drivesRes, summaryRes] = await Promise.all([
@@ -113,30 +156,58 @@
       } catch (err) {
         document.getElementById("kpiGrid").innerHTML =
           `<div class="state-message error">Unable to load dashboard data. Please try again.</div>`;
+        renderReadinessCard(null);
         return;
       }
 
+      // These two are optional: if either fails, the rest of the dashboard still shows.
+      const [eligibleResult, readinessResult] = await Promise.allSettled([
+        apiFetch("/api/analytics/student/eligible-drives-count"),
+        apiFetch("/api/readiness/me"),
+      ]);
       try {
-        const eligibleRes = await apiFetch("/api/analytics/student/eligible-drives-count");
-        eligibleCount = eligibleRes.data.count;
+        if (eligibleResult.status === "fulfilled" && eligibleResult.value) eligibleCount = eligibleResult.value.data.count;
       } catch (err) {
         eligibleCount = null;
       }
+      try {
+        if (readinessResult.status === "fulfilled" && readinessResult.value) readiness = readinessResult.value.data;
+      } catch (err) {
+        readiness = null;
+      }
 
-      renderStudentStats(applications, interviews, offers, summary, eligibleCount);
+      renderStudentStats(applications, interviews, offers, summary, eligibleCount, readiness);
       renderApplicationStatusChart(applications);
       renderApplicationTrendChart(applications, interviews, offers);
       renderUpcomingInterviews(interviews);
       renderRecentApplications(applications);
       renderRecommendedDrives(openDrives);
+      renderReadinessCard(readiness);
     }
 
-    function renderStudentStats(applications, interviews, offers, summary, eligibleCount) {
+    function renderStudentStats(applications, interviews, offers, summary, eligibleCount, readiness) {
       const active = applications.filter((a) => ["applied", "shortlisted", "selected"].includes(a.status)).length;
       const shortlisted = applications.filter((a) => a.status === "shortlisted").length;
       const upcoming = interviews.filter((i) => i.status === "scheduled").length;
 
+      // Readiness Score card: shows the score and opens the readiness page when clicked
+      let readinessCard;
+      if (readiness) {
+        const band = rdBand(readiness);
+        readinessCard = {
+          icon: "🎯",
+          label: "Readiness Score",
+          value: `${rdEsc(Math.round(Number(readiness.score) || 0))}<span style="font-size:0.55em;font-weight:600;color:#6b7280">/100</span>`,
+          sub: rdEsc(band[0]) + ", view details",
+          subColor: band[1],
+          href: RD_PAGE,
+        };
+      } else {
+        readinessCard = { icon: "🎯", label: "Readiness Score", value: "—", sub: "View details", href: RD_PAGE };
+      }
+
       const cards = [
+        readinessCard,
         { icon: "📄", label: "Total Applications", value: applications.length, sub: "All time" },
         { icon: "⏳", label: "Active Applications", value: active, sub: "In progress" },
         { icon: "⭐", label: "Shortlisted", value: shortlisted, sub: "Awaiting next step" },
@@ -151,18 +222,46 @@
       ];
 
       document.getElementById("kpiGrid").innerHTML = cards
-        .map(
-          (c) => `
-          <div class="kpi-card">
+        .map((c) => {
+          const inner = `
             <div class="kpi-icon">${c.icon}</div>
             <div class="kpi-body">
               <div class="kpi-label">${c.label}</div>
               <div class="kpi-value">${c.value}</div>
-              <div class="kpi-sub">${c.sub}</div>
-            </div>
-          </div>`
-        )
+              <div class="kpi-sub"${c.subColor ? ` style="color:${c.subColor};font-weight:600"` : ""}>${c.sub}</div>
+            </div>`;
+          return c.href
+            ? `<a class="kpi-card" href="${c.href}" title="Open my readiness details">${inner}</a>`
+            : `<div class="kpi-card">${inner}</div>`;
+        })
         .join("");
+    }
+
+    function renderReadinessCard(readiness) {
+      const el = document.getElementById("readinessCardBody");
+      if (!el) return;
+      if (!readiness) {
+        el.innerHTML = `
+          <div class="list-row">
+            <div class="list-row-sub">Your readiness score could not be loaded right now.</div>
+            <a href="${RD_PAGE}" class="btn-primary">Open readiness page</a>
+          </div>`;
+        return;
+      }
+      const band = rdBand(readiness);
+      const top = readiness.recommendations && readiness.recommendations[0];
+      const next = top
+        ? `Best next step: ${rdEsc(top.title)} (+${rdEsc(Math.round(Number(top.potential) || 0))} pts)`
+        : (readiness.has_offer ? "You already hold an offer." : "You have completed every step.");
+      el.innerHTML = `
+        <div class="list-row">
+          <div>
+            <div class="list-row-main">${rdEsc(Math.round(Number(readiness.score) || 0))}/100
+              <span style="color:${band[1]};font-weight:600">${rdEsc(band[0])}</span></div>
+            <div class="list-row-sub">${next}</div>
+          </div>
+          <a href="${RD_PAGE}" class="btn-primary">View details</a>
+        </div>`;
     }
 
     function renderApplicationStatusChart(applications) {

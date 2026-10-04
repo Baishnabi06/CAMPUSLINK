@@ -19,6 +19,8 @@ from app.routes import (
     documents,
     notifications,
     analytics,
+    officer,
+    readiness,
 )
 
 logger = logging.getLogger(__name__)
@@ -47,6 +49,8 @@ app.include_router(offers.router, prefix="/api/offers", tags=["offers"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(officer.router, prefix="/api/officer", tags=["officer"])
+app.include_router(readiness.router, prefix="/api/readiness", tags=["readiness"])
 
 
 @app.on_event("startup")

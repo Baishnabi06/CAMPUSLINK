@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CampusLink — My Readiness</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+
+  <!-- Styles for this page only (all classes start with "sr-") -->
+  <style>
+    .sr-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .sr-title { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; color: #111827; }
+    .sr-sub { margin: 4px 0 0; font-size: 0.9rem; color: #6b7280; }
+
+    .sr-btn {
+      display: inline-block;
+      margin: 0;
+      padding: 8px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #fff;
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #1f2937;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .sr-btn:hover { background: #f3f4f6; }
+    .sr-btn-primary { border-color: #2563eb; background: #2563eb; color: #fff; }
+    .sr-btn-primary:hover { background: #1d4ed8; }
+    .sr-btn:disabled { opacity: 0.6; cursor: default; }
+    .sr-btn:focus-visible { outline: 3px solid #93b4ff; outline-offset: 2px; }
+
+    .sr-error {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      background: #fef2f2;
+      font-size: 0.9rem;
+      color: #991b1b;
+    }
+    .sr-error.show { display: flex; }
+
+    .sr-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .sr-span-5 { grid-column: span 5; }
+    .sr-span-7 { grid-column: span 7; }
+    .sr-span-12 { grid-column: span 12; }
+
+    .sr-card {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding: 20px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+    }
+    .sr-card h3 { margin: 0; font-size: 1rem; font-weight: 600; color: #111827; }
+    .sr-card-sub { margin: 2px 0 16px; font-size: 0.85rem; color: #6b7280; }
+
+    /* hero */
+    .sr-hero { display: flex; flex-direction: row; align-items: center; gap: 28px; }
+    .sr-hero-main { flex: 1; min-width: 0; }
+    .sr-band { display: inline-block; padding: 4px 14px; border-radius: 999px; font-size: 0.9rem; font-weight: 700; }
+    .sr-hero h3 { margin: 10px 0 6px; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; }
+    .sr-hero p { margin: 0; font-size: 0.95rem; line-height: 1.5; color: #374151; }
+
+    .sr-ring-fg { transition: stroke-dashoffset 1s cubic-bezier(0.2, 0.7, 0.2, 1); }
+    .sr-ring-val { font-size: 34px; font-weight: 700; fill: #111827; }
+    .sr-ring-cap { font-size: 11px; fill: #6b7280; }
+
+    .sr-journey { margin-top: 18px; }
+    .sr-journey-top { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.82rem; color: #6b7280; }
+    .sr-journey-top strong { color: #111827; }
+    .sr-track { position: relative; height: 12px; border-radius: 999px; background: #eef1f6; overflow: hidden; }
+    .sr-track-ghost, .sr-track-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 999px; transition: width 1s cubic-bezier(0.2, 0.7, 0.2, 1); }
+    .sr-track-ghost { opacity: 0.28; }
+
+    /* breakdown */
+    .sr-comp { margin-bottom: 16px; }
+    .sr-comp:last-child { margin-bottom: 0; }
+    .sr-comp-top { display: flex; justify-content: space-between; gap: 12px; font-size: 0.92rem; color: #374151; }
+    .sr-comp-top strong { color: #111827; font-variant-numeric: tabular-nums; }
+    .sr-comp-detail { margin: 1px 0 6px; font-size: 0.82rem; color: #6b7280; }
+    .sr-bar { height: 10px; border-radius: 999px; background: #eef1f6; overflow: hidden; }
+    .sr-bar-fill { height: 100%; border-radius: 999px; transition: width 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+    /* steps */
+    .sr-steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+    .sr-steps li { position: relative; padding: 12px 0 12px 38px; border-bottom: 1px solid #f0f2f6; counter-increment: step; }
+    .sr-steps li:last-child { border-bottom: 0; }
+    .sr-steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 12px;
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #dbeafe;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #1d4ed8;
+    }
+    .sr-step-top { display: flex; justify-content: space-between; gap: 10px; font-weight: 600; font-size: 0.95rem; color: #111827; }
+    .sr-step-pts { flex: none; font-size: 0.82rem; font-weight: 700; color: #15803d; }
+    .sr-step-detail { margin: 3px 0 8px; font-size: 0.86rem; line-height: 1.45; color: #6b7280; }
+
+    .sr-list { margin: 0; padding: 0; list-style: none; }
+    .sr-list li { display: flex; gap: 10px; padding: 6px 0; font-size: 0.92rem; color: #374151; }
+    .sr-list svg { flex: none; width: 18px; height: 18px; margin-top: 2px; fill: none; stroke: #16a34a; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* AI */
+    .sr-ai { padding: 16px; border: 1px solid #e0e7ff; border-radius: 10px; background: #f5f7ff; }
+    .sr-ai-text { margin: 0; font-size: 0.95rem; line-height: 1.6; color: #1f2937; white-space: pre-line; }
+    .sr-ai-meta { margin: 10px 0 0; font-size: 0.8rem; color: #6b7280; }
+    .sr-ai-err { margin: 10px 0 0; font-size: 0.86rem; color: #991b1b; }
+    .sr-ai-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+    .sr-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 0; font-size: 0.9rem; color: #9ca3af; text-align: center; }
+    .sr-muted { margin: 0; font-size: 0.9rem; color: #6b7280; }
+
+    .sr-skel {
+      height: 160px;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #f1f3f7 25%, #e7eaf0 37%, #f1f3f7 63%);
+      background-size: 400% 100%;
+      animation: sr-shimmer 1.4s ease infinite;
+    }
+    @keyframes sr-shimmer { from { background-position: 100% 50%; } to { background-position: 0 50%; } }
+
+    .sr-how summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; color: #111827; }
+    .sr-how p { margin: 10px 0 0; font-size: 0.88rem; line-height: 1.55; color: #6b7280; }
+    .sr-how ul { margin: 8px 0 0; padding-left: 18px; font-size: 0.88rem; line-height: 1.6; color: #374151; }
+
+    @media (max-width: 1100px) {
+      .sr-span-5, .sr-span-7 { grid-column: span 12; }
+    }
+    @media (max-width: 640px) {
+      .sr-hero { flex-direction: column; align-items: flex-start; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .sr-skel { animation: none; }
+      .sr-ring-fg, .sr-bar-fill, .sr-track-fill, .sr-track-ghost { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+
+    <div class="sr-head">
+      <div>
+        <h2 class="sr-title">My placement readiness</h2>
+        <p class="sr-sub">How your profile looks to recruiters, and what to improve next. <span id="srUpdated"></span></p>
+      </div>
+      <button type="button" class="sr-btn" data-sr="refresh">Refresh</button>
+    </div>
+
+    <div class="sr-error" id="srError" role="alert">
+      <span id="srErrorText"></span>
+      <button type="button" class="sr-btn" data-sr="refresh">Try again</button>
+    </div>
+
+    <div class="sr-grid">
+      <section class="sr-card sr-span-12 sr-hero" id="srHero"><div class="sr-skel" style="width:100%"></div></section>
+    </div>
+
+    <div class="sr-grid">
+      <section class="sr-card sr-span-7">
+        <h3>Score breakdown</h3>
+        <p class="sr-card-sub">Where your points come from.</p>
+        <div id="srBreakdown"><div class="sr-skel"></div></div>
+      </section>
+
+      <section class="sr-card sr-span-5">
+        <h3>What to do next</h3>
+        <p class="sr-card-sub">The steps that would add the most points.</p>
+        <div id="srSteps"><div class="sr-skel"></div></div>
+      </section>
+    </div>
+
+    <div class="sr-grid">
+      <section class="sr-card sr-span-5">
+        <h3>Your strengths</h3>
+        <p class="sr-card-sub">What is already working for you.</p>
+        <div id="srStrengths"><div class="sr-skel" style="height:110px"></div></div>
+      </section>
+
+      <section class="sr-card sr-span-7">
+        <h3>AI feedback</h3>
+        <p class="sr-card-sub">A short, personal note based on your score.</p>
+        <div id="srAi"><div class="sr-skel" style="height:110px"></div></div>
+      </section>
+    </div>
+
+    <div class="sr-card">
+      <details class="sr-how">
+        <summary>How is my score calculated?</summary>
+        <p>Your score is out of 100. It adds up six parts, each worth the maximum shown in the breakdown above.</p>
+        <ul>
+          <li>Academics: your CGPA and whether you have any backlogs.</li>
+          <li>Skills: how many skills you list, and how many of them recruiters are asking for in open drives.</li>
+          <li>Projects and certifications: the more you add, up to a point, the more you score.</li>
+          <li>Profile and resume: an uploaded resume and a completed profile.</li>
+          <li>Activity: the drives you apply to and the interviews you attend.</li>
+        </ul>
+        <p>The score updates as soon as your profile or activity changes. It shows how strong your profile is today. It is not a prediction of whether you will be placed.</p>
+      </details>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    /* ---------- helpers (names start with "sr" so they can't clash with layout.js) ---------- */
+    const SR = { data: null };
+
+    // Student-friendly wording: "At risk" becomes "Needs attention"
+    const SR_BANDS = {
+      ready:        { label: "Ready",          color: "#16a34a", soft: "#dcfce7", text: "#166534",
+                      title: "You are in great shape", msg: "Keep applying to drives that fit you and keep practising for interviews." },
+      almost_ready: { label: "Almost ready",   color: "#2563eb", soft: "#dbeafe", text: "#1d4ed8",
+                      title: "You are almost there", msg: "A few improvements will make a real difference. The steps on this page show where to start." },
+      needs_work:   { label: "Needs work",     color: "#f59e0b", soft: "#fef3c7", text: "#92400e",
+                      title: "You have a base to build on", msg: "Focus on the first step below and your score will move quickly." },
+      at_risk:      { label: "Needs attention", color: "#dc2626", soft: "#fee2e2", text: "#991b1b",
+                      title: "Let's get your profile ready", msg: "Start with the first step below. Each step you finish adds points straight away." },
+      offer:        { label: "Offer received", color: "#7c3aed", soft: "#ede9fe", text: "#5b21b6",
+                      title: "Congratulations on your offer", msg: "You already hold an offer. Your score below shows how strong your profile is." },
+    };
+    const SR_LINKS = {
+      engagement: { href: "student-drives.html", text: "Browse drives" },
+      default:    { href: "profile.html", text: "Update my profile" },
+    };
+
+    function srEsc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function srNum(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
+    function srFmt(v, max = 1) { return srNum(v).toLocaleString("en-IN", { maximumFractionDigits: max }); }
+    function srSet(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
+    function srBand(r) { return r.has_offer ? SR_BANDS.offer : (SR_BANDS[r.band] || SR_BANDS.needs_work); }
+    function srDate(v) {
+      if (!v) return "";
+      const d = new Date(v);
+      return isNaN(d) ? "" : d.toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+    }
+    function srAnimate(root) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        root.querySelectorAll("[data-offset]").forEach((el) => { el.style.strokeDashoffset = el.dataset.offset; });
+        root.querySelectorAll("[data-w]").forEach((el) => { el.style.width = el.dataset.w; });
+      }));
+    }
+    function srEmpty(msg) {
+      return `<div class="sr-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>${srEsc(msg)}</span></div>`;
+    }
+
+    /* ---------- rendering ---------- */
+    function srRenderHero(r) {
+      const el = document.getElementById("srHero");
+      if (!el) return;
+      const b = srBand(r);
+      const R = 54, C = 2 * Math.PI * R;
+      const score = Math.max(0, Math.min(100, srNum(r.score)));
+      const potential = Math.max(score, Math.min(100, srNum(r.potential_score)));
+
+      const ring = `<svg viewBox="0 0 140 140" width="170" height="170" role="img" aria-label="Your readiness score is ${srFmt(score, 0)} out of 100">
+        <circle cx="70" cy="70" r="${R}" fill="none" stroke="#eef1f6" stroke-width="13"/>
+        <circle class="sr-ring-fg" cx="70" cy="70" r="${R}" fill="none" stroke="${b.color}" stroke-width="13" stroke-linecap="round"
+                stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${C.toFixed(2)}" data-offset="${(C * (1 - score / 100)).toFixed(2)}" transform="rotate(-90 70 70)"/>
+        <text class="sr-ring-val" x="70" y="76" text-anchor="middle">${srFmt(score, 0)}</text>
+        <text class="sr-ring-cap" x="70" y="94" text-anchor="middle">out of 100</text></svg>`;
+
+      let journey = "";
+      if (!r.has_offer && potential > score) {
+        journey = `<div class="sr-journey">
+          <div class="sr-journey-top"><span>Your score: <strong>${srFmt(score, 0)}</strong></span><span>Possible with your top steps: <strong>about ${srFmt(potential, 0)}</strong></span></div>
+          <div class="sr-track" role="img" aria-label="Score ${srFmt(score, 0)}, possible ${srFmt(potential, 0)}">
+            <div class="sr-track-ghost" style="width:0;background:${b.color}" data-w="${potential.toFixed(1)}%"></div>
+            <div class="sr-track-fill" style="width:0;background:${b.color}" data-w="${score.toFixed(1)}%"></div></div></div>`;
+      }
+
+      el.innerHTML = `${ring}<div class="sr-hero-main">
+        <span class="sr-band" style="background:${b.soft};color:${b.text}">${srEsc(b.label)}</span>
+        <h3>${srEsc(b.title)}</h3><p>${srEsc(b.msg)}</p>${journey}</div>`;
+      srAnimate(el);
+    }
+
+    function srRenderBreakdown(r) {
+      const el = document.getElementById("srBreakdown");
+      if (!el) return;
+      const b = srBand(r);
+      el.innerHTML = r.components.map((c) => c.available
+        ? `<div class="sr-comp">
+            <div class="sr-comp-top"><span>${srEsc(c.label)}</span><strong>${srFmt(c.score, 1)} / ${c.max}</strong></div>
+            <div class="sr-comp-detail">${srEsc(c.detail)}</div>
+            <div class="sr-bar"><div class="sr-bar-fill" style="width:0;background:${b.color}" data-w="${(c.max ? (srNum(c.score) / c.max) * 100 : 0).toFixed(1)}%"></div></div></div>`
+        : `<div class="sr-comp"><div class="sr-comp-top"><span>${srEsc(c.label)}</span><strong>Not tracked yet</strong></div>
+            <div class="sr-comp-detail">This part is not counted in your score for now.</div></div>`).join("");
+      srAnimate(el);
+    }
+
+    function srRenderSteps(r) {
+      const el = document.getElementById("srSteps");
+      if (!el) return;
+      if (!r.recommendations.length) {
+        el.innerHTML = srEmpty(r.has_offer ? "Nothing outstanding. Well done." : "You have completed every step. Keep it up.");
+        return;
+      }
+      el.innerHTML = `<ol class="sr-steps">` + r.recommendations.map((x) => {
+        const link = SR_LINKS[x.component] || SR_LINKS.default;
+        return `<li><div class="sr-step-top"><span>${srEsc(x.title)}</span><span class="sr-step-pts">+${srFmt(x.potential, 0)} pts</span></div>
+          <p class="sr-step-detail">${srEsc(x.detail)}</p>
+          <a class="sr-btn" href="${srEsc(link.href)}">${srEsc(link.text)}</a></li>`;
+      }).join("") + `</ol>`;
+    }
+
+    function srRenderStrengths(r) {
+      const el = document.getElementById("srStrengths");
+      if (!el) return;
+      if (!r.strengths.length) {
+        el.innerHTML = `<p class="sr-muted">Your strengths will show up here as you build your profile.</p>`;
+        return;
+      }
+      el.innerHTML = `<ul class="sr-list">` + r.strengths.map((s) =>
+        `<li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>${srEsc(s)}</span></li>`).join("") + `</ul>`;
+    }
+
+    function srAiHtml(a) {
+      const when = srDate(a.generated_at);
+      return `<div class="sr-ai"><p class="sr-ai-text" id="srAiOut">${srEsc(a.summary)}</p>
+        <p class="sr-ai-meta">Written by AI from your current scores${when ? ", " + srEsc(when) : ""}. It is guidance, not a promise of results.</p></div>`;
+    }
+
+    function srRenderAi(r) {
+      const el = document.getElementById("srAi");
+      if (!el) return;
+      if (r.analysis) { el.innerHTML = srAiHtml(r.analysis); return; }
+      if (r.ai_available) {
+        el.innerHTML = `<div class="sr-ai"><div class="sr-ai-row">
+          <button type="button" class="sr-btn sr-btn-primary" data-sr="ai">Get my AI feedback</button>
+          <span class="sr-muted" id="srAiOut">A short note on where you stand and what to do first. Only your scores are used, not your name or email.</span></div></div>`;
+        return;
+      }
+      el.innerHTML = `<p class="sr-muted">AI feedback is not available right now.</p>`;
+    }
+
+    function srRender() {
+      const r = SR.data;
+      if (!r) return;
+      srRenderHero(r);
+      srRenderBreakdown(r);
+      srRenderSteps(r);
+      srRenderStrengths(r);
+      srRenderAi(r);
+    }
+
+    /* ---------- loading ---------- */
+    function srSkeleton() {
+      const box = document.getElementById("srError");
+      if (box) box.classList.remove("show");
+      const hero = document.getElementById("srHero");
+      if (hero) hero.innerHTML = '<div class="sr-skel" style="width:100%"></div>';
+      ["srBreakdown", "srSteps"].forEach((id) => { const el = document.getElementById(id); if (el) el.innerHTML = '<div class="sr-skel"></div>'; });
+      ["srStrengths", "srAi"].forEach((id) => { const el = document.getElementById(id); if (el) el.innerHTML = '<div class="sr-skel" style="height:110px"></div>'; });
+    }
+
+    function srShowError(msg) {
+      srSet("srErrorText", "Could not load your readiness score: " + msg + ".");
+      const box = document.getElementById("srError");
+      if (box) box.classList.add("show");
+      const hero = document.getElementById("srHero");
+      if (hero) hero.innerHTML = srEmpty("No data to show.");
+      ["srBreakdown", "srSteps", "srStrengths", "srAi"].forEach((id) => { const el = document.getElementById(id); if (el) el.innerHTML = srEmpty("No data to show."); });
+    }
+
+    async function loadReadiness() {
+      srSkeleton();
+      try {
+        const res = await apiFetch("/api/readiness/me");
+        if (!res) return; // apiFetch already redirected to login
+        SR.data = res.data;
+        srRender();
+        srSet("srUpdated", "Updated " + new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }) + ".");
+      } catch (err) {
+        srShowError(err.message);
+      }
+    }
+
+    async function srGenerateAi(btn) {
+      btn.disabled = true;
+      btn.textContent = "Writing your feedback…";
+      try {
+        const res = await apiFetch("/api/readiness/me/analysis", { method: "POST" });
+        if (!res) return;
+        SR.data.analysis = res.data;
+        srRenderAi(SR.data);
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = "Try again";
+        const out = document.getElementById("srAiOut");
+        if (out) { out.className = "sr-ai-err"; out.textContent = err.message; }
+      }
+    }
+
+    // Buttons (delegated, so they work wherever layout.js places this content)
+    document.addEventListener("click", (e) => {
+      const btn = e.target && e.target.closest ? e.target.closest("[data-sr]") : null;
+      if (!btn) return;
+      if (btn.dataset.sr === "refresh") loadReadiness();
+      if (btn.dataset.sr === "ai") srGenerateAi(btn);
+    });
+
+    /* ---------- start ---------- */
+    const user = requireAuth(["student"]);
+    if (user) {
+      renderShell(user, "student-readiness.html");
+      loadReadiness();
+    }
+  </script>
+</body>
+</html>
