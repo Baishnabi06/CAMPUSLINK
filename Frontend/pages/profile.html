@@ -1,160 +1,2993 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>CampusLink — Profile</title>
+
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
+
+  <style>
+    /* =========================================================
+       PROFILE PAGE
+       ========================================================= */
+
+    .profile-extra-section {
+      margin-top: 25px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 18px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .section-header h3 {
+      margin: 0;
+      min-width: 0;
+    }
+
+    /* =========================================================
+       BUTTONS
+       ========================================================= */
+
+    .add-item-btn {
+      padding: 9px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    .add-item-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .add-item-btn:disabled,
+    .save-item-btn:disabled,
+    .cancel-item-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    /* =========================================================
+       ADD ITEM FORM
+       ========================================================= */
+
+    .item-form {
+      display: none;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+
+      padding: 20px;
+      margin-bottom: 20px;
+
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+
+      background: #f9fafb;
+
+      overflow: hidden;
+    }
+
+    .item-form.active {
+      display: block;
+    }
+
+    .item-form h4 {
+      margin-top: 0;
+      margin-bottom: 18px;
+    }
+
+    .item-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 15px;
+
+      width: 100%;
+      min-width: 0;
+    }
+
+    .item-grid .full-width {
+      grid-column: 1 / -1;
+    }
+
+    .item-form .form-group {
+      margin-bottom: 0;
+      min-width: 0;
+    }
+
+    .item-form label {
+      display: block;
+      margin-bottom: 6px;
+
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .item-form input,
+    .item-form textarea {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+
+      box-sizing: border-box;
+
+      padding: 10px 12px;
+
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .item-form input[type="file"] {
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .item-form textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .file-help {
+      margin-top: 6px;
+
+      font-size: 12px;
+      line-height: 1.4;
+
+      color: #6b7280;
+    }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .save-item-btn,
+    .cancel-item-btn {
+      padding: 9px 16px;
+
+      border-radius: 6px;
+
+      font-size: 14px;
+      font-weight: 600;
+
+      cursor: pointer;
+    }
+
+    .save-item-btn {
+      border: none;
+      background: #16a34a;
+      color: #fff;
+    }
+
+    .save-item-btn:hover {
+      background: #15803d;
+    }
+
+    .cancel-item-btn {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #374151;
+    }
+
+    .cancel-item-btn:hover {
+      background: #f3f4f6;
+    }
+
+    /* =========================================================
+       ITEM LIST
+       ========================================================= */
+
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+
+      width: 100%;
+      min-width: 0;
+    }
+
+    .item-card {
+      width: 100%;
+      min-width: 0;
+
+      box-sizing: border-box;
+
+      padding: 18px;
+
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+
+      background: #fff;
+
+      overflow: hidden;
+    }
+
+    .item-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+
+      gap: 15px;
+
+      width: 100%;
+      min-width: 0;
+    }
+
+    .item-card-header>div {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-title {
+      margin: 0;
+
+      font-size: 17px;
+      font-weight: 700;
+
+      color: #111827;
+
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .item-subtitle {
+      margin: 4px 0 0;
+
+      font-size: 14px;
+
+      color: #4b5563;
+
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .item-date {
+      margin: 10px 0;
+
+      font-size: 13px;
+
+      color: #6b7280;
+
+      overflow-wrap: anywhere;
+    }
+
+    .item-description {
+      margin: 10px 0;
+
+      font-size: 14px;
+      line-height: 1.5;
+
+      color: #374151;
+
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    /* =========================================================
+       DOCUMENT ROW
+       ========================================================= */
+
+    .item-document {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      width: 100%;
+      min-width: 0;
+
+      box-sizing: border-box;
+
+      margin-top: 12px;
+      padding: 10px 12px;
+
+      border-radius: 6px;
+
+      background: #f3f4f6;
+
+      font-size: 13px;
+
+      overflow: hidden;
+    }
+
+    .document-name {
+      flex: 1;
+      min-width: 0;
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .document-view-btn {
+      flex-shrink: 0;
+
+      border: none;
+      background: transparent;
+
+      color: #2563eb;
+
+      font-weight: 600;
+
+      cursor: pointer;
+
+      white-space: nowrap;
+    }
+
+    .document-view-btn:hover {
+      text-decoration: underline;
+    }
+
+    .remove-item-btn {
+      flex-shrink: 0;
+
+      border: none;
+      background: transparent;
+
+      color: #dc2626;
+
+      font-size: 13px;
+      font-weight: 600;
+
+      cursor: pointer;
+
+      white-space: nowrap;
+    }
+
+    .remove-item-btn:hover {
+      text-decoration: underline;
+    }
+
+    .no-items {
+      width: 100%;
+      box-sizing: border-box;
+
+      padding: 20px;
+
+      text-align: center;
+
+      border: 1px dashed #d1d5db;
+      border-radius: 8px;
+
+      color: #6b7280;
+
+      font-size: 14px;
+    }
+
+    .item-error {
+      margin-top: 10px;
+
+      color: #dc2626;
+
+      font-size: 13px;
+      line-height: 1.4;
+
+      overflow-wrap: anywhere;
+    }
+
+    /* =========================================================
+       PROFILE WIDTH SAFETY
+       ========================================================= */
+
+    #page-content,
+    #studentSection,
+    #studentProfileForm {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    #identityCard,
+    #currentResume {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    #studentProfileForm input,
+    #studentProfileForm textarea,
+    #studentProfileForm select {
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
+    /* =========================================================
+       820px — TABLET / NARROW DESKTOP
+       ========================================================= */
+
+    @media (max-width: 820px) {
+
+      .item-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .item-grid .full-width {
+        grid-column: auto;
+      }
+
+      .section-header {
+        flex-wrap: wrap;
+      }
+
+      .section-header h3 {
+        flex: 1 1 auto;
+        min-width: 150px;
+      }
+
+      .add-item-btn {
+        max-width: 100%;
+      }
+
+      .item-card {
+        min-width: 0;
+      }
+
+      .item-card-header {
+        flex-wrap: wrap;
+      }
+
+      .item-form {
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .item-document {
+        flex-wrap: wrap;
+      }
+
+      .document-name {
+        min-width: 0;
+      }
+
+      #studentProfileForm {
+        min-width: 0;
+      }
+
+      #studentProfileForm input,
+      #studentProfileForm textarea,
+      #studentProfileForm button {
+        max-width: 100%;
+      }
+    }
+
+    /* =========================================================
+       780px — MAIN PROFILE BREAKPOINT
+       ========================================================= */
+
+    @media (max-width: 780px) {
+
+      .section-header {
+        align-items: flex-start;
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .section-header h3 {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .add-item-btn {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .item-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .item-card-header>div {
+        width: 100%;
+      }
+
+      .remove-item-btn {
+        align-self: flex-start;
+      }
+
+      .item-document {
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .document-name {
+        flex: 1 1 150px;
+        min-width: 0;
+
+        overflow-wrap: anywhere;
+        word-break: break-word;
+
+        white-space: normal;
+      }
+
+      .document-view-btn {
+        flex-shrink: 0;
+      }
+
+      .form-actions {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .save-item-btn,
+      .cancel-item-btn {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .item-form {
+        padding: 16px;
+      }
+
+      .item-card {
+        padding: 16px;
+      }
+    }
+
+    /* =========================================================
+       600px — SMALL TABLET / LARGE PHONE
+       ========================================================= */
+
+    @media (max-width: 600px) {
+
+      .item-form {
+        padding: 14px;
+      }
+
+      .item-card {
+        padding: 14px;
+      }
+
+      .item-document {
+        width: 100%;
+      }
+
+      .document-name {
+        width: 100%;
+        flex-basis: 100%;
+      }
+
+      .document-view-btn {
+        width: auto;
+      }
+    }
+
+    /* =========================================================
+       480px — MOBILE
+       ========================================================= */
+
+    @media (max-width: 480px) {
+
+      .section-header {
+        gap: 10px;
+      }
+
+      .item-form {
+        padding: 12px;
+      }
+
+      .item-card {
+        padding: 12px;
+      }
+
+      .item-document {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 7px;
+      }
+
+      .document-name {
+        width: 100%;
+        flex-basis: auto;
+      }
+
+      .document-view-btn {
+        width: 100%;
+        padding: 4px 0;
+
+        text-align: left;
+        white-space: normal;
+      }
+
+      .remove-item-btn {
+        padding: 4px 0;
+      }
+    }
+
+    /* =========================================================
+       VERY SMALL SCREENS
+       ========================================================= */
+
+    @media (max-width: 360px) {
+
+      .item-form,
+      .item-card {
+        padding: 10px;
+      }
+
+      .item-title {
+        font-size: 16px;
+      }
+
+      .item-subtitle {
+        font-size: 13px;
+      }
+    }
+
+    /* =========================================================
+   RESPONSIVE LAYOUT + CENTERED CONTENT + FIXED SIDEBAR
+   (single consolidated override block)
+   ========================================================= */
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    /* clip (not hidden) so sticky/fixed sidebars keep working */
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: clip;
+    }
+
+    /* ---------- Sidebar: fixed only on desktop ---------- */
+    @media (min-width: 1025px) {
+
+      .sidebar,
+      #sidebar,
+      .app-shell>aside {
+        position: sticky;
+        top: 0;
+        align-self: flex-start;
+        height: 100vh;
+        height: 100dvh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        flex-shrink: 0;
+      }
+    }
+
+    /* ---------- Sidebar: normal top bar on tablet/mobile ---------- */
+    @media (max-width: 1024px) {
+
+      .sidebar,
+      #sidebar,
+      .app-shell>aside {
+        position: static;
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        overflow: visible;
+        align-self: auto;
+      }
+
+      .sidebar nav,
+      #sidebar nav,
+      .app-shell>aside nav {
+        height: auto;
+        min-height: 0;
+        overflow-x: auto;
+        /* nav links scroll sideways instead of stretching */
+      }
+
+      .sidebar nav a,
+      #sidebar nav a,
+      .app-shell>aside nav a {
+        height: auto;
+        min-height: 0;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+    }
+
+    /* ---------- Main content: fluid and centered ---------- */
+    #page-content {
+      flex: 1 1 0;
+      /* fills the space beside a flex sidebar */
+      width: 100%;
+      min-width: 0;
+      max-width: 900px;
+      margin-inline: auto;
+      padding: clamp(12px, 3vw, 28px);
+    }
+
+    #page-content h2 {
+      font-size: clamp(1.3rem, 2.5vw + 0.8rem, 1.8rem);
+      overflow-wrap: anywhere;
+    }
+
+    #page-content .card {
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    /* ---------- Form controls never overflow their cards ---------- */
+    #studentProfileForm .form-group {
+      width: 100%;
+      min-width: 0;
+      margin-bottom: 16px;
+    }
+
+    #studentProfileForm input:not([type="checkbox"]):not([type="radio"]),
+    #studentProfileForm select,
+    #studentProfileForm textarea {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    /* ---------- Resume card ---------- */
+    #resumeFile {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      margin-bottom: 12px;
+    }
+
+    #uploadResumeBtn,
+    #studentProfileForm button[type="submit"] {
+      max-width: 100%;
+    }
+
+    #resumeStatus,
+    #saveStatus {
+      display: inline-block;
+      margin-top: 8px;
+      overflow-wrap: anywhere;
+    }
+
+    /* ---------- Narrow screens ---------- */
+    @media (max-width: 700px) {
+      .item-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .item-grid .full-width {
+        grid-column: auto;
+      }
+
+      #studentProfileForm button[type="submit"],
+      #uploadResumeBtn {
+        width: 100%;
+      }
+
+      #saveStatus,
+      #resumeStatus {
+        display: block;
+        margin-left: 0 !important;
+      }
+    }
+
+    /* ---------- Very wide screens ---------- */
+    @media (min-width: 1400px) {
+      #page-content {
+        max-width: 1000px;
+      }
+    }
+  </style>
 </head>
+
+
 <body>
+
+  <!-- =======================================================
+       APPLICATION SHELL
+       ======================================================= -->
+
   <div class="app-shell" id="app-shell"></div>
 
+
+  <!-- =======================================================
+       PAGE CONTENT
+       ======================================================= -->
+
   <div id="page-content" style="display: none;">
+
     <h2>My Profile</h2>
 
-    <div class="card" id="identityCard">Loading...</div>
+
+    <!-- =====================================================
+         IDENTITY CARD
+         ===================================================== -->
+
+    <div class="card" id="identityCard">
+      Loading...
+    </div>
+
+
+    <!-- =====================================================
+         STUDENT SECTION
+         ===================================================== -->
 
     <div id="studentSection" style="display: none; margin-top: 20px;">
+
+
+      <!-- ===================================================
+           ACADEMIC DETAILS
+           =================================================== -->
+
       <div class="card">
+
         <h3>Academic Details</h3>
+
         <div id="profileError" class="auth-error"></div>
+
+
         <form id="studentProfileForm">
+
+          <!-- Branch -->
+
           <div class="form-group">
-            <label for="branch">Branch</label>
+
+            <label for="branch">
+              Branch
+            </label>
+
             <input type="text" id="branch" />
+
           </div>
+
+
+          <!-- CGPA -->
+
           <div class="form-group">
-            <label for="cgpa">CGPA</label>
+
+            <label for="cgpa">
+              CGPA
+            </label>
+
             <input type="number" id="cgpa" step="0.01" min="0" max="10" />
+
           </div>
+
+
+          <!-- Backlogs -->
+
           <div class="form-group">
-            <label for="backlogs">Backlogs</label>
+
+            <label for="backlogs">
+              Backlogs
+            </label>
+
             <input type="number" id="backlogs" min="0" />
+
           </div>
+
+
+          <!-- Skills -->
+
           <div class="form-group">
-            <label for="skills">Skills (comma-separated)</label>
+
+            <label for="skills">
+              Skills (comma-separated)
+            </label>
+
             <input type="text" id="skills" placeholder="e.g. Python, React, SQL" />
+
           </div>
-          <div class="form-group">
-            <label for="certifications">Certifications (comma-separated)</label>
-            <input type="text" id="certifications" placeholder="e.g. AWS Cloud Practitioner" />
+
+
+          <!-- =================================================
+               CERTIFICATIONS
+               ================================================= -->
+
+          <div class="profile-extra-section">
+
+            <div class="section-header">
+
+              <h3>
+                Certifications
+              </h3>
+
+              <button type="button" class="add-item-btn" id="addCertificationBtn">
+                + Add Certification
+              </button>
+
+            </div>
+
+
+            <!-- Legacy certification names -->
+
+            <div class="form-group">
+
+              <label for="certifications">
+                Certification Names
+              </label>
+
+              <input type="text" id="certifications" placeholder="e.g. AWS Cloud Practitioner, Python Certificate" />
+
+              <small style="color: #6b7280;">
+                Existing certification names can be entered here.
+                Use "+ Add Certification" to upload certificate documents.
+              </small>
+
+            </div>
+
+
+            <!-- Certification form -->
+
+            <div class="item-form" id="certificationForm">
+
+              <h4>
+                Add Certification
+              </h4>
+
+
+              <div class="item-grid">
+
+                <div class="form-group">
+
+                  <label for="certificationName">
+                    Certification Name
+                  </label>
+
+                  <input type="text" id="certificationName" placeholder="e.g. Python Programming" />
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="certificationIssuer">
+                    Issuing Organization
+                  </label>
+
+                  <input type="text" id="certificationIssuer" placeholder="e.g. Eduskills" />
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="certificationDate">
+                    Issue Date
+                  </label>
+
+                  <input type="date" id="certificationDate" />
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="certificationFile">
+                    Certificate Document
+                  </label>
+
+                  <input type="file" id="certificationFile" accept=".pdf,.jpg,.jpeg,.png" />
+
+                  <div class="file-help">
+                    Accepted formats: PDF, JPG, JPEG, PNG
+                  </div>
+
+                </div>
+
+              </div>
+
+
+              <div id="certificationError" class="item-error"></div>
+
+
+              <div class="form-actions">
+
+                <button type="button" class="save-item-btn" id="saveCertificationBtn">
+                  Add Certification
+                </button>
+
+                <button type="button" class="cancel-item-btn" id="cancelCertificationBtn">
+                  Cancel
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <!-- Certification list -->
+
+            <div class="item-list" id="certificationList">
+
+              <div class="no-items">
+                No certificate documents added yet.
+              </div>
+
+            </div>
+
           </div>
-          <div class="form-group">
-            <label for="projects">Projects (comma-separated)</label>
+
+
+          <!-- =================================================
+               INTERNSHIPS
+               ================================================= -->
+
+          <div class="profile-extra-section">
+
+            <div class="section-header">
+
+              <h3>
+                Internships
+              </h3>
+
+              <button type="button" class="add-item-btn" id="addInternshipBtn">
+                + Add Internship
+              </button>
+
+            </div>
+
+
+            <!-- Internship form -->
+
+            <div class="item-form" id="internshipForm">
+
+              <h4>
+                Add Internship
+              </h4>
+
+
+              <div class="item-grid">
+
+                <div class="form-group">
+
+                  <label for="internshipCompany">
+                    Company Name
+                  </label>
+
+                  <input type="text" id="internshipCompany" placeholder="e.g. UptoSkills" />
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="internshipRole">
+                    Internship Role
+                  </label>
+
+                  <input type="text" id="internshipRole" placeholder="e.g. Web Developer Intern" />
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="internshipStartDate">
+                    Start Date
+                  </label>
+
+                  <input type="date" id="internshipStartDate" />
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="internshipEndDate">
+                    End Date
+                  </label>
+
+                  <input type="date" id="internshipEndDate" />
+
+                </div>
+
+
+                <div class="form-group full-width">
+
+                  <label for="internshipDescription">
+                    Description (Optional)
+                  </label>
+
+                  <textarea id="internshipDescription" placeholder="Briefly describe your internship..."></textarea>
+
+                </div>
+
+
+                <div class="form-group full-width">
+
+                  <label for="internshipCertificate">
+                    Internship Certificate
+                  </label>
+
+                  <input type="file" id="internshipCertificate" accept=".pdf,.jpg,.jpeg,.png" />
+
+                  <div class="file-help">
+                    Accepted formats: PDF, JPG, JPEG, PNG
+                  </div>
+
+                </div>
+
+              </div>
+
+
+              <div id="internshipError" class="item-error"></div>
+
+
+              <div class="form-actions">
+
+                <button type="button" class="save-item-btn" id="saveInternshipBtn">
+                  Add Internship
+                </button>
+
+                <button type="button" class="cancel-item-btn" id="cancelInternshipBtn">
+                  Cancel
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <!-- Internship list -->
+
+            <div class="item-list" id="internshipList">
+
+              <div class="no-items">
+                No internships added yet.
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- =================================================
+               PROJECTS
+               ================================================= -->
+
+          <div class="form-group" style="margin-top: 20px;">
+
+            <label for="projects">
+              Projects (comma-separated)
+            </label>
+
             <input type="text" id="projects" placeholder="e.g. Library Management System" />
+
           </div>
-          <button type="submit">Save Profile</button>
+
+
+          <!-- =================================================
+               SAVE PROFILE
+               ================================================= -->
+
+          <button type="submit">
+            Save Profile
+          </button>
+
           <span id="saveStatus" style="margin-left: 10px; color: #16a34a;"></span>
+
         </form>
+
       </div>
 
+
+      <!-- =====================================================
+           RESUME
+           ===================================================== -->
+
       <div class="card" style="margin-top: 20px;">
-        <h3>Resume</h3>
-        <p id="currentResume">No resume uploaded yet.</p>
+
+        <h3>
+          Resume
+        </h3>
+
+
+        <p id="currentResume">
+          No resume uploaded yet.
+        </p>
+
+
         <input type="file" id="resumeFile" accept="application/pdf" />
-        <button id="uploadResumeBtn">Upload Resume (PDF)</button>
+
+
+        <button type="button" id="uploadResumeBtn">
+          Upload Resume (PDF)
+        </button>
+
+
         <span id="resumeStatus" style="margin-left: 10px;"></span>
+
       </div>
+
     </div>
+
   </div>
+
+
+  <!-- =======================================================
+       JAVASCRIPT FILES
+       ======================================================= -->
 
   <script src="../js/api.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/layout.js"></script>
+
+
   <script>
-    const user = requireAuth([]);
-    if (user) {
-      renderShell(user, "profile.html");
 
-      document.getElementById("identityCard").innerHTML = `
-        <p><strong>Name:</strong> ${user.name}</p>
-        <p><strong>Email:</strong> ${user.email}</p>
-        <p><strong>Role:</strong> ${user.role.replace("_", " ")}</p>
-      `;
-
-      if (user.role === "student") {
-        document.getElementById("studentSection").style.display = "block";
-        loadStudentProfile();
-      }
-    }
-
-    async function loadStudentProfile() {
-      try {
-        const res = await apiFetch("/api/students/me");
-        const s = res.data;
-        document.getElementById("branch").value = s.branch || "";
-        document.getElementById("cgpa").value = s.cgpa ?? "";
-        document.getElementById("backlogs").value = s.backlogs ?? 0;
-        document.getElementById("skills").value = (s.skills || []).join(", ");
-        document.getElementById("certifications").value = (s.certifications || []).join(", ");
-        document.getElementById("projects").value = (s.projects || []).join(", ");
-
-        if (s.resume_url) {
-          document.getElementById("currentResume").innerHTML =
-            `Current resume: <a href="${API_BASE_URL}${s.resume_url}" target="_blank">View PDF</a>`;
-        }
-      } catch (err) {
-        document.getElementById("profileError").textContent = err.message;
-      }
-    }
+    /* =========================================================
+       UTILITY FUNCTIONS
+       ========================================================= */
 
     function toList(value) {
+
       return value
         .split(",")
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0);
+        .map(
+          item => item.trim()
+        )
+        .filter(
+          item => item.length > 0
+        );
+
     }
 
-    document.getElementById("studentProfileForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const errorEl = document.getElementById("profileError");
-      const statusEl = document.getElementById("saveStatus");
-      errorEl.textContent = "";
-      statusEl.textContent = "";
 
-      const payload = {
-        branch: document.getElementById("branch").value || null,
-        cgpa: document.getElementById("cgpa").value
-          ? parseFloat(document.getElementById("cgpa").value)
-          : null,
-        backlogs: document.getElementById("backlogs").value
-          ? parseInt(document.getElementById("backlogs").value, 10)
-          : null,
-        skills: toList(document.getElementById("skills").value),
-        certifications: toList(document.getElementById("certifications").value),
-        projects: toList(document.getElementById("projects").value),
-      };
+    function formatDate(dateString) {
+
+      if (!dateString) {
+        return "";
+      }
+
+
+      const date =
+        new Date(
+          dateString + "T00:00:00"
+        );
+
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+
+        return dateString;
+
+      }
+
+
+      return date.toLocaleDateString(
+        "en-IN",
+        {
+          day: "2-digit",
+          month: "short",
+          year: "numeric"
+        }
+      );
+
+    }
+
+
+    function escapeHtml(value) {
+
+      const div =
+        document.createElement(
+          "div"
+        );
+
+
+      div.textContent =
+        value ?? "";
+
+
+      return div.innerHTML;
+
+    }
+
+
+    function getFileUrl(filePath) {
+
+      if (!filePath) {
+        return "";
+      }
+
+
+      if (
+        filePath.startsWith("http://") ||
+        filePath.startsWith("https://")
+      ) {
+
+        return filePath;
+
+      }
+
+
+      return `${API_BASE_URL}${filePath}`;
+
+    }
+
+
+    /* =========================================================
+       STATE
+       ========================================================= */
+
+    let certifications = [];
+    let internships = [];
+
+
+    /* =========================================================
+       DOM ELEMENTS
+       ========================================================= */
+
+    const addCertificationBtn =
+      document.getElementById(
+        "addCertificationBtn"
+      );
+
+
+    const certificationForm =
+      document.getElementById(
+        "certificationForm"
+      );
+
+
+    const saveCertificationBtn =
+      document.getElementById(
+        "saveCertificationBtn"
+      );
+
+
+    const cancelCertificationBtn =
+      document.getElementById(
+        "cancelCertificationBtn"
+      );
+
+
+    const certificationList =
+      document.getElementById(
+        "certificationList"
+      );
+
+
+    const certificationError =
+      document.getElementById(
+        "certificationError"
+      );
+
+
+    const addInternshipBtn =
+      document.getElementById(
+        "addInternshipBtn"
+      );
+
+
+    const internshipForm =
+      document.getElementById(
+        "internshipForm"
+      );
+
+
+    const saveInternshipBtn =
+      document.getElementById(
+        "saveInternshipBtn"
+      );
+
+
+    const cancelInternshipBtn =
+      document.getElementById(
+        "cancelInternshipBtn"
+      );
+
+
+    const internshipList =
+      document.getElementById(
+        "internshipList"
+      );
+
+
+    const internshipError =
+      document.getElementById(
+        "internshipError"
+      );
+
+
+    /* =========================================================
+       AUTHENTICATION
+       ========================================================= */
+
+    const user =
+      requireAuth([]);
+
+
+    if (user) {
+
+      renderShell(
+        user,
+        "profile.html"
+      );
+
+
+      document.getElementById(
+        "identityCard"
+      ).innerHTML = `
+
+        <p>
+          <strong>Name:</strong>
+          ${escapeHtml(
+        user.name || ""
+      )}
+        </p>
+
+        <p>
+          <strong>Email:</strong>
+          ${escapeHtml(
+        user.email || ""
+      )}
+        </p>
+
+        <p>
+          <strong>Role:</strong>
+          ${escapeHtml(
+        (user.role || "")
+          .replace("_", " ")
+      )}
+        </p>
+
+      `;
+
+
+      if (
+        user.role === "student"
+      ) {
+
+        document.getElementById(
+          "studentSection"
+        ).style.display = "block";
+
+
+        loadStudentProfile();
+
+      }
+
+    }
+
+
+    /* =========================================================
+       LOAD STUDENT PROFILE
+       ========================================================= */
+
+    async function loadStudentProfile() {
 
       try {
-        await apiFetch("/api/students/me", { method: "PUT", body: payload });
-        statusEl.textContent = "Saved!";
-        setTimeout(() => (statusEl.textContent = ""), 2000);
-      } catch (err) {
-        errorEl.textContent = err.message;
-      }
-    });
 
-    document.getElementById("uploadResumeBtn").addEventListener("click", async () => {
-      const statusEl = document.getElementById("resumeStatus");
-      const fileInput = document.getElementById("resumeFile");
-      if (!fileInput.files.length) {
-        statusEl.textContent = "Choose a PDF file first.";
+        const res =
+          await apiFetch(
+            "/api/students/me"
+          );
+
+
+        const student =
+          res.data;
+
+
+        document.getElementById(
+          "branch"
+        ).value =
+          student.branch || "";
+
+
+        document.getElementById(
+          "cgpa"
+        ).value =
+          student.cgpa ?? "";
+
+
+        document.getElementById(
+          "backlogs"
+        ).value =
+          student.backlogs ?? 0;
+
+
+        document.getElementById(
+          "skills"
+        ).value =
+          (student.skills || [])
+            .join(", ");
+
+
+        document.getElementById(
+          "certifications"
+        ).value =
+          (student.certifications || [])
+            .join(", ");
+
+
+        document.getElementById(
+          "projects"
+        ).value =
+          (student.projects || [])
+            .join(", ");
+
+
+        /* Resume */
+
+        if (
+          student.resume_url
+        ) {
+
+          document.getElementById(
+            "currentResume"
+          ).innerHTML = `
+
+            Current resume:
+            <a
+              href="${getFileUrl(
+            student.resume_url
+          )}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View PDF
+            </a>
+
+          `;
+
+        }
+
+
+        /*
+          Load both backend collections.
+          Promise.allSettled means one failed request
+          will not stop the other section from loading.
+        */
+
+        await Promise.allSettled([
+          loadCertifications(),
+          loadInternships()
+        ]);
+
+
+      } catch (err) {
+
+        document.getElementById(
+          "profileError"
+        ).textContent =
+          err.message;
+
+      }
+
+    }
+
+
+    /* =========================================================
+       SAVE STUDENT PROFILE
+       ========================================================= */
+
+    document
+      .getElementById(
+        "studentProfileForm"
+      )
+      .addEventListener(
+        "submit",
+        async event => {
+
+          event.preventDefault();
+
+
+          const errorEl =
+            document.getElementById(
+              "profileError"
+            );
+
+
+          const statusEl =
+            document.getElementById(
+              "saveStatus"
+            );
+
+
+          errorEl.textContent = "";
+          statusEl.textContent = "";
+
+
+          const cgpaValue =
+            document.getElementById(
+              "cgpa"
+            ).value;
+
+
+          const backlogValue =
+            document.getElementById(
+              "backlogs"
+            ).value;
+
+
+          const payload = {
+
+            branch:
+              document.getElementById(
+                "branch"
+              ).value || null,
+
+
+            cgpa:
+              cgpaValue
+                ? parseFloat(
+                  cgpaValue
+                )
+                : null,
+
+
+            backlogs:
+              backlogValue
+                ? parseInt(
+                  backlogValue,
+                  10
+                )
+                : null,
+
+
+            skills:
+              toList(
+                document.getElementById(
+                  "skills"
+                ).value
+              ),
+
+
+            certifications:
+              toList(
+                document.getElementById(
+                  "certifications"
+                ).value
+              ),
+
+
+            projects:
+              toList(
+                document.getElementById(
+                  "projects"
+                ).value
+              )
+
+          };
+
+
+          try {
+
+            await apiFetch(
+              "/api/students/me",
+              {
+                method: "PUT",
+                body: payload
+              }
+            );
+
+
+            statusEl.textContent =
+              "Saved!";
+
+
+            setTimeout(
+              () => {
+                statusEl.textContent = "";
+              },
+              2000
+            );
+
+
+          } catch (err) {
+
+            errorEl.textContent =
+              err.message;
+
+          }
+
+        }
+      );
+
+
+    /* =========================================================
+       CERTIFICATIONS — LOAD
+       ========================================================= */
+
+    async function loadCertifications() {
+
+      try {
+
+        const res =
+          await apiFetch(
+            "/api/certifications"
+          );
+
+
+        certifications =
+          Array.isArray(res.data)
+            ? res.data
+            : [];
+
+
+        renderCertifications();
+
+
+      } catch (err) {
+
+        certificationError.textContent =
+          "Could not load certifications: " +
+          err.message;
+
+      }
+
+    }
+
+
+    /* =========================================================
+       CERTIFICATIONS — OPEN FORM
+       ========================================================= */
+
+    addCertificationBtn.addEventListener(
+      "click",
+      () => {
+
+        certificationForm.classList.add(
+          "active"
+        );
+
+
+        certificationError.textContent =
+          "";
+
+
+        document.getElementById(
+          "certificationName"
+        ).focus();
+
+      }
+    );
+
+
+    /* =========================================================
+       CERTIFICATIONS — CANCEL
+       ========================================================= */
+
+    cancelCertificationBtn.addEventListener(
+      "click",
+      () => {
+
+        clearCertificationForm();
+
+
+        certificationForm.classList.remove(
+          "active"
+        );
+
+      }
+    );
+
+
+    /* =========================================================
+       CERTIFICATIONS — ADD
+       ========================================================= */
+
+    saveCertificationBtn.addEventListener(
+      "click",
+      async () => {
+
+        certificationError.textContent =
+          "";
+
+
+        const name =
+          document.getElementById(
+            "certificationName"
+          ).value.trim();
+
+
+        const issuer =
+          document.getElementById(
+            "certificationIssuer"
+          ).value.trim();
+
+
+        const issueDate =
+          document.getElementById(
+            "certificationDate"
+          ).value;
+
+
+        const fileInput =
+          document.getElementById(
+            "certificationFile"
+          );
+
+
+        const file =
+          fileInput.files[0];
+
+
+        /* Validation */
+
+        if (!name) {
+
+          certificationError.textContent =
+            "Please enter the certification name.";
+
+          return;
+
+        }
+
+
+        if (!issuer) {
+
+          certificationError.textContent =
+            "Please enter the issuing organization.";
+
+          return;
+
+        }
+
+
+        if (!issueDate) {
+
+          certificationError.textContent =
+            "Please select the issue date.";
+
+          return;
+
+        }
+
+
+        if (!file) {
+
+          certificationError.textContent =
+            "Please upload the certificate document.";
+
+          return;
+
+        }
+
+
+        const allowedTypes = [
+          "application/pdf",
+          "image/jpeg",
+          "image/png"
+        ];
+
+
+        if (
+          !allowedTypes.includes(
+            file.type
+          )
+        ) {
+
+          certificationError.textContent =
+            "Only PDF, JPG, JPEG and PNG files are allowed.";
+
+          return;
+
+        }
+
+
+        saveCertificationBtn.disabled =
+          true;
+
+
+        saveCertificationBtn.textContent =
+          "Uploading...";
+
+
+        try {
+
+          const formData =
+            new FormData();
+
+
+          formData.append(
+            "name",
+            name
+          );
+
+
+          formData.append(
+            "issuing_organization",
+            issuer
+          );
+
+
+          formData.append(
+            "issue_date",
+            issueDate
+          );
+
+
+          formData.append(
+            "file",
+            file
+          );
+
+
+          const res =
+            await apiUpload(
+              "/api/certifications",
+              formData
+            );
+
+
+          if (
+            res &&
+            res.data
+          ) {
+
+            certifications.unshift(
+              res.data
+            );
+
+          }
+
+
+          renderCertifications();
+
+
+          clearCertificationForm();
+
+
+          certificationForm.classList.remove(
+            "active"
+          );
+
+
+        } catch (err) {
+
+          certificationError.textContent =
+            "Error: " +
+            err.message;
+
+
+        } finally {
+
+          saveCertificationBtn.disabled =
+            false;
+
+
+          saveCertificationBtn.textContent =
+            "Add Certification";
+
+        }
+
+      }
+    );
+
+
+    /* =========================================================
+       CERTIFICATIONS — RENDER
+       ========================================================= */
+
+    function renderCertifications() {
+
+      certificationList.innerHTML = "";
+
+
+      if (
+        certifications.length === 0
+      ) {
+
+        certificationList.innerHTML = `
+
+          <div class="no-items">
+            No certificate documents added yet.
+          </div>
+
+        `;
+
+        return;
+
+      }
+
+
+      certifications.forEach(
+        certification => {
+
+          const card =
+            document.createElement(
+              "div"
+            );
+
+
+          card.className =
+            "item-card";
+
+
+          const certificateUrl =
+            getFileUrl(
+              certification.certificate_url
+            );
+
+
+          card.innerHTML = `
+
+            <div class="item-card-header">
+
+              <div>
+
+                <h4 class="item-title">
+                  ${escapeHtml(
+            certification.name
+          )}
+                </h4>
+
+                <p class="item-subtitle">
+                  ${escapeHtml(
+            certification.issuing_organization
+          )}
+                </p>
+
+              </div>
+
+
+              <button
+                type="button"
+                class="remove-item-btn"
+                data-id="${escapeHtml(
+            String(
+              certification.id
+            )
+          )}"
+              >
+                Remove
+              </button>
+
+            </div>
+
+
+            <p class="item-date">
+
+              Issued:
+              ${formatDate(
+            certification.issue_date
+          )}
+
+            </p>
+
+
+            <div class="item-document">
+
+              <span>
+                Document
+              </span>
+
+              <span class="document-name">
+                ${escapeHtml(
+            certification.certificate_filename ||
+            "Certificate"
+          )}
+              </span>
+
+              <button
+                type="button"
+                class="document-view-btn"
+                data-url="${escapeHtml(
+            certificateUrl
+          )}"
+              >
+                View Certificate
+              </button>
+
+            </div>
+
+          `;
+
+
+          certificationList.appendChild(
+            card
+          );
+
+        }
+      );
+
+
+      /* Remove */
+
+      certificationList
+        .querySelectorAll(
+          ".remove-item-btn"
+        )
+        .forEach(
+          button => {
+
+            button.addEventListener(
+              "click",
+              () => {
+
+                removeCertification(
+                  button.dataset.id
+                );
+
+              }
+            );
+
+          }
+        );
+
+
+      /* View */
+
+      certificationList
+        .querySelectorAll(
+          ".document-view-btn"
+        )
+        .forEach(
+          button => {
+
+            button.addEventListener(
+              "click",
+              () => {
+
+                if (
+                  button.dataset.url
+                ) {
+
+                  window.open(
+                    button.dataset.url,
+                    "_blank",
+                    "noopener,noreferrer"
+                  );
+
+                }
+
+              }
+            );
+
+          }
+        );
+
+    }
+
+
+    /* =========================================================
+       CERTIFICATIONS — DELETE
+       ========================================================= */
+
+    async function removeCertification(id) {
+
+      const certification =
+        certifications.find(
+          item =>
+            String(item.id) ===
+            String(id)
+        );
+
+
+      if (!certification) {
         return;
       }
 
-      const formData = new FormData();
-      formData.append("file", fileInput.files[0]);
 
-      statusEl.textContent = "Uploading...";
-      try {
-        const res = await apiUpload("/api/students/me/resume", formData);
-        statusEl.textContent = "Uploaded!";
-        document.getElementById("currentResume").innerHTML =
-          `Current resume: <a href="${API_BASE_URL}${res.data.resume_url}" target="_blank">View PDF</a>`;
-      } catch (err) {
-        statusEl.textContent = "Error: " + err.message;
+      const confirmed =
+        window.confirm(
+          "Are you sure you want to remove this certification?"
+        );
+
+
+      if (!confirmed) {
+        return;
       }
-    });
+
+
+      try {
+
+        await apiFetch(
+          `/api/certifications/${encodeURIComponent(id)}`,
+          {
+            method: "DELETE"
+          }
+        );
+
+
+        certifications =
+          certifications.filter(
+            item =>
+              String(item.id) !==
+              String(id)
+          );
+
+
+        renderCertifications();
+
+
+      } catch (err) {
+
+        certificationError.textContent =
+          "Could not delete certification: " +
+          err.message;
+
+      }
+
+    }
+
+
+    /* =========================================================
+       CERTIFICATIONS — CLEAR FORM
+       ========================================================= */
+
+    function clearCertificationForm() {
+
+      document.getElementById(
+        "certificationName"
+      ).value = "";
+
+
+      document.getElementById(
+        "certificationIssuer"
+      ).value = "";
+
+
+      document.getElementById(
+        "certificationDate"
+      ).value = "";
+
+
+      document.getElementById(
+        "certificationFile"
+      ).value = "";
+
+
+      certificationError.textContent =
+        "";
+
+    }
+
+
+    /* =========================================================
+       INTERNSHIPS — LOAD
+       ========================================================= */
+
+    async function loadInternships() {
+
+      try {
+
+        const res =
+          await apiFetch(
+            "/api/internships"
+          );
+
+
+        internships =
+          Array.isArray(res.data)
+            ? res.data
+            : [];
+
+
+        renderInternships();
+
+
+      } catch (err) {
+
+        internshipError.textContent =
+          "Could not load internships: " +
+          err.message;
+
+      }
+
+    }
+
+
+    /* =========================================================
+       INTERNSHIPS — OPEN FORM
+       ========================================================= */
+
+    addInternshipBtn.addEventListener(
+      "click",
+      () => {
+
+        internshipForm.classList.add(
+          "active"
+        );
+
+
+        internshipError.textContent =
+          "";
+
+
+        document.getElementById(
+          "internshipCompany"
+        ).focus();
+
+      }
+    );
+
+
+    /* =========================================================
+       INTERNSHIPS — CANCEL
+       ========================================================= */
+
+    cancelInternshipBtn.addEventListener(
+      "click",
+      () => {
+
+        clearInternshipForm();
+
+
+        internshipForm.classList.remove(
+          "active"
+        );
+
+      }
+    );
+
+
+    /* =========================================================
+       INTERNSHIPS — ADD
+       ========================================================= */
+
+    saveInternshipBtn.addEventListener(
+      "click",
+      async () => {
+
+        internshipError.textContent =
+          "";
+
+
+        const company =
+          document.getElementById(
+            "internshipCompany"
+          ).value.trim();
+
+
+        const role =
+          document.getElementById(
+            "internshipRole"
+          ).value.trim();
+
+
+        const startDate =
+          document.getElementById(
+            "internshipStartDate"
+          ).value;
+
+
+        const endDate =
+          document.getElementById(
+            "internshipEndDate"
+          ).value;
+
+
+        const description =
+          document.getElementById(
+            "internshipDescription"
+          ).value.trim();
+
+
+        const certificateInput =
+          document.getElementById(
+            "internshipCertificate"
+          );
+
+
+        const certificate =
+          certificateInput.files[0];
+
+
+        /* Validation */
+
+        if (!company) {
+
+          internshipError.textContent =
+            "Please enter the company name.";
+
+          return;
+
+        }
+
+
+        if (!role) {
+
+          internshipError.textContent =
+            "Please enter the internship role.";
+
+          return;
+
+        }
+
+
+        if (!startDate) {
+
+          internshipError.textContent =
+            "Please select the start date.";
+
+          return;
+
+        }
+
+
+        if (!endDate) {
+
+          internshipError.textContent =
+            "Please select the end date.";
+
+          return;
+
+        }
+
+
+        if (
+          new Date(endDate) <
+          new Date(startDate)
+        ) {
+
+          internshipError.textContent =
+            "End date cannot be before the start date.";
+
+          return;
+
+        }
+
+
+        if (!certificate) {
+
+          internshipError.textContent =
+            "Please upload your internship certificate.";
+
+          return;
+
+        }
+
+
+        const allowedTypes = [
+          "application/pdf",
+          "image/jpeg",
+          "image/png"
+        ];
+
+
+        if (
+          !allowedTypes.includes(
+            certificate.type
+          )
+        ) {
+
+          internshipError.textContent =
+            "Only PDF, JPG, JPEG and PNG files are allowed.";
+
+          return;
+
+        }
+
+
+        saveInternshipBtn.disabled =
+          true;
+
+
+        saveInternshipBtn.textContent =
+          "Uploading...";
+
+
+        try {
+
+          const formData =
+            new FormData();
+
+
+          formData.append(
+            "company_name",
+            company
+          );
+
+
+          formData.append(
+            "role",
+            role
+          );
+
+
+          formData.append(
+            "start_date",
+            startDate
+          );
+
+
+          formData.append(
+            "end_date",
+            endDate
+          );
+
+
+          formData.append(
+            "description",
+            description
+          );
+
+
+          formData.append(
+            "file",
+            certificate
+          );
+
+
+          const res =
+            await apiUpload(
+              "/api/internships",
+              formData
+            );
+
+
+          if (
+            res &&
+            res.data
+          ) {
+
+            internships.unshift(
+              res.data
+            );
+
+          }
+
+
+          renderInternships();
+
+
+          clearInternshipForm();
+
+
+          internshipForm.classList.remove(
+            "active"
+          );
+
+
+        } catch (err) {
+
+          internshipError.textContent =
+            "Error: " +
+            err.message;
+
+
+        } finally {
+
+          saveInternshipBtn.disabled =
+            false;
+
+
+          saveInternshipBtn.textContent =
+            "Add Internship";
+
+        }
+
+      }
+    );
+
+
+    /* =========================================================
+       INTERNSHIPS — RENDER
+       ========================================================= */
+
+    function renderInternships() {
+
+      internshipList.innerHTML = "";
+
+
+      if (
+        internships.length === 0
+      ) {
+
+        internshipList.innerHTML = `
+
+          <div class="no-items">
+            No internships added yet.
+          </div>
+
+        `;
+
+        return;
+
+      }
+
+
+      internships.forEach(
+        internship => {
+
+          const card =
+            document.createElement(
+              "div"
+            );
+
+
+          card.className =
+            "item-card";
+
+
+          const certificateUrl =
+            getFileUrl(
+              internship.certificate_url
+            );
+
+
+          card.innerHTML = `
+
+            <div class="item-card-header">
+
+              <div>
+
+                <h4 class="item-title">
+                  ${escapeHtml(
+            internship.company_name
+          )}
+                </h4>
+
+                <p class="item-subtitle">
+                  ${escapeHtml(
+            internship.role
+          )}
+                </p>
+
+              </div>
+
+
+              <button
+                type="button"
+                class="remove-item-btn"
+                data-id="${escapeHtml(
+            String(
+              internship.id
+            )
+          )}"
+              >
+                Remove
+              </button>
+
+            </div>
+
+
+            <p class="item-date">
+
+              ${formatDate(
+            internship.start_date
+          )}
+
+              –
+
+              ${formatDate(
+            internship.end_date
+          )}
+
+            </p>
+
+
+            ${internship.description
+              ? `
+                  <p class="item-description">
+                    ${escapeHtml(
+                internship.description
+              )}
+                  </p>
+                `
+              : ""
+            }
+
+
+            <div class="item-document">
+
+              <span>
+                Document
+              </span>
+
+              <span class="document-name">
+                ${escapeHtml(
+              internship.certificate_filename ||
+              "Internship Certificate"
+            )}
+              </span>
+
+              <button
+                type="button"
+                class="document-view-btn"
+                data-url="${escapeHtml(
+              certificateUrl
+            )}"
+              >
+                View Certificate
+              </button>
+
+            </div>
+
+          `;
+
+
+          internshipList.appendChild(
+            card
+          );
+
+        }
+      );
+
+
+      /* Remove */
+
+      internshipList
+        .querySelectorAll(
+          ".remove-item-btn"
+        )
+        .forEach(
+          button => {
+
+            button.addEventListener(
+              "click",
+              () => {
+
+                removeInternship(
+                  button.dataset.id
+                );
+
+              }
+            );
+
+          }
+        );
+
+
+      /* View */
+
+      internshipList
+        .querySelectorAll(
+          ".document-view-btn"
+        )
+        .forEach(
+          button => {
+
+            button.addEventListener(
+              "click",
+              () => {
+
+                if (
+                  button.dataset.url
+                ) {
+
+                  window.open(
+                    button.dataset.url,
+                    "_blank",
+                    "noopener,noreferrer"
+                  );
+
+                }
+
+              }
+            );
+
+          }
+        );
+
+    }
+
+
+    /* =========================================================
+       INTERNSHIPS — DELETE
+       ========================================================= */
+
+    async function removeInternship(id) {
+
+      const internship =
+        internships.find(
+          item =>
+            String(item.id) ===
+            String(id)
+        );
+
+
+      if (!internship) {
+        return;
+      }
+
+
+      const confirmed =
+        window.confirm(
+          "Are you sure you want to remove this internship?"
+        );
+
+
+      if (!confirmed) {
+        return;
+      }
+
+
+      try {
+
+        await apiFetch(
+          `/api/internships/${encodeURIComponent(id)}`,
+          {
+            method: "DELETE"
+          }
+        );
+
+
+        internships =
+          internships.filter(
+            item =>
+              String(item.id) !==
+              String(id)
+          );
+
+
+        renderInternships();
+
+
+      } catch (err) {
+
+        internshipError.textContent =
+          "Could not delete internship: " +
+          err.message;
+
+      }
+
+    }
+
+
+    /* =========================================================
+       INTERNSHIPS — CLEAR FORM
+       ========================================================= */
+
+    function clearInternshipForm() {
+
+      document.getElementById(
+        "internshipCompany"
+      ).value = "";
+
+
+      document.getElementById(
+        "internshipRole"
+      ).value = "";
+
+
+      document.getElementById(
+        "internshipStartDate"
+      ).value = "";
+
+
+      document.getElementById(
+        "internshipEndDate"
+      ).value = "";
+
+
+      document.getElementById(
+        "internshipDescription"
+      ).value = "";
+
+
+      document.getElementById(
+        "internshipCertificate"
+      ).value = "";
+
+
+      internshipError.textContent =
+        "";
+
+    }
+
+
+    /* =========================================================
+       RESUME UPLOAD
+       ========================================================= */
+
+    document
+      .getElementById(
+        "uploadResumeBtn"
+      )
+      .addEventListener(
+        "click",
+        async () => {
+
+          const statusEl =
+            document.getElementById(
+              "resumeStatus"
+            );
+
+
+          const fileInput =
+            document.getElementById(
+              "resumeFile"
+            );
+
+
+          if (
+            !fileInput.files.length
+          ) {
+
+            statusEl.textContent =
+              "Choose a PDF file first.";
+
+            return;
+
+          }
+
+
+          const file =
+            fileInput.files[0];
+
+
+          if (
+            file.type !==
+            "application/pdf"
+          ) {
+
+            statusEl.textContent =
+              "Only PDF resumes are accepted.";
+
+            return;
+
+          }
+
+
+          const formData =
+            new FormData();
+
+
+          formData.append(
+            "file",
+            file
+          );
+
+
+          statusEl.textContent =
+            "Uploading...";
+
+
+          try {
+
+            const res =
+              await apiUpload(
+                "/api/students/me/resume",
+                formData
+              );
+
+
+            statusEl.textContent =
+              "Uploaded!";
+
+
+            document.getElementById(
+              "currentResume"
+            ).innerHTML = `
+
+              Current resume:
+              <a
+                href="${getFileUrl(
+              res.data.resume_url
+            )}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View PDF
+              </a>
+
+            `;
+
+
+          } catch (err) {
+
+            statusEl.textContent =
+              "Error: " +
+              err.message;
+
+          }
+
+        }
+      );
+
   </script>
+
 </body>
+
 </html>

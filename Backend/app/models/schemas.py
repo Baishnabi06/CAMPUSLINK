@@ -263,3 +263,17 @@ class DocumentCreate(BaseModel):
 
 class DocumentVerify(BaseModel):
     verification_status: DocumentVerificationStatus
+
+
+
+class UserNameUpdate(BaseModel):
+    name: str = Field(min_length=1)
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8)
+
+
+class AccountDeleteRequest(BaseModel):
+    password: str

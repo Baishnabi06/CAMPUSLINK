@@ -118,3 +118,28 @@ async function apiFetchBlob(path) {
 
   return response.blob();
 }
+
+/**
+ * Theme handling: "light" | "dark" | "system" (default).
+ * Runs on every page immediately, since api.js is the first script loaded
+ * everywhere — including login.html/register.html, which never call renderShell().
+ */
+function applyTheme() {
+  const theme = localStorage.getItem("campuslink_theme") || "system";
+  const root = document.documentElement;
+  if (theme === "system") {
+    root.removeAttribute("data-theme");
+  } else {
+    root.setAttribute("data-theme", theme);
+  }
+}
+
+applyTheme();
+
+if (window.matchMedia) {
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if ((localStorage.getItem("campuslink_theme") || "system") === "system") {
+      applyTheme();
+    }
+  });
+}
