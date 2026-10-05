@@ -37,14 +37,17 @@
         <div class="form-group">
           <label for="mode">Mode</label>
           <select id="mode">
-            <option value="online">Online</option>
+            <option value="online">Online (Google Meet)</option>
             <option value="offline">Offline</option>
           </select>
         </div>
-        <div class="form-group">
-          <label for="venue_or_link">Venue / Meeting Link</label>
-          <input type="text" id="venue_or_link" required />
+        <div class="form-group" id="venueGroup">
+          <label for="venue_or_link">Venue</label>
+          <input type="text" id="venue_or_link" />
         </div>
+        <p id="meetNote" style="color:#6b7280; font-size:0.85rem; margin-bottom:12px;">
+          A Google Meet link will be created automatically and emailed to the candidate.
+        </p>
         <div class="form-group">
           <label for="panel">Interview Panel (comma-separated names)</label>
           <input type="text" id="panel" placeholder="e.g. Anita Rao, Vikram Shah" />
@@ -70,6 +73,25 @@
   <script>
     const user = requireAuth(["recruiter"]);
     let lastPayload = null;
+
+    const modeEl = document.getElementById("mode");
+    const venueInput = document.getElementById("venue_or_link");
+
+    // Online: hide the venue field (backend generates the Meet link).
+    function syncMode() {
+      const online = modeEl.value === "online";
+      document.getElementById("venueGroup").style.display = online ? "none" : "block";
+      document.getElementById("meetNote").style.display = online ? "block" : "none";
+      venueInput.required = !online;
+      if (online) venueInput.value = "";
+    }
+    modeEl.addEventListener("change", syncMode);
+    syncMode();
+
+    function resetForm() {
+      document.getElementById("interviewForm").reset();
+      syncMode();
+    }
 
     if (user) {
       renderShell(user, "recruiter-interviews.html");
@@ -120,8 +142,8 @@
         date: document.getElementById("date").value,
         start_time: document.getElementById("start_time").value,
         end_time: document.getElementById("end_time").value,
-        mode: document.getElementById("mode").value,
-        venue_or_link: document.getElementById("venue_or_link").value,
+        mode: modeEl.value,
+        venue_or_link: modeEl.value === "online" ? "" : venueInput.value,
         panel: document
           .getElementById("panel")
           .value.split(",")
@@ -143,9 +165,9 @@
       lastPayload = payload;
 
       try {
-        const res = await apiFetch("/api/interviews", { method: "POST", body: payload });
+        await apiFetch("/api/interviews", { method: "POST", body: payload });
         conflictBox.style.display = "none";
-        document.getElementById("interviewForm").reset();
+        resetForm();
         loadScheduledInterviews();
       } catch (err) {
         errorEl.textContent = err.message;
@@ -157,6 +179,7 @@
       const errorEl = document.getElementById("scheduleError");
       const conflictBox = document.getElementById("conflictBox");
       const conflictText = document.getElementById("conflictText");
+      const scheduleBtn = document.getElementById("scheduleBtn");
       errorEl.textContent = "";
       conflictBox.style.display = "none";
 
@@ -167,27 +190,38 @@
       }
       lastPayload = payload;
 
-      const response = await fetch(`${API_BASE_URL}/api/interviews`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
+      // Creating a Meet link can take a couple of seconds.
+      scheduleBtn.disabled = true;
+      scheduleBtn.textContent = payload.mode === "online" ? "Creating Meet link..." : "Scheduling...";
 
-      if (data.success === false && data.data && data.data.conflicts) {
-        conflictText.textContent = "Conflicts: " + data.data.conflicts.join("; ");
-        conflictBox.style.display = "block";
-        return;
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/interviews`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+
+        if (data.success === false && data.data && data.data.conflicts) {
+          conflictText.textContent = "Conflicts: " + data.data.conflicts.join("; ");
+          conflictBox.style.display = "block";
+          return;
+        }
+
+        if (!response.ok || data.success === false) {
+          errorEl.textContent = data.message || data.detail || "Failed to schedule interview";
+          return;
+        }
+
+        resetForm();
+        conflictBox.style.display = "none";
+        loadScheduledInterviews();
+      } catch (err) {
+        errorEl.textContent = "Network error: " + err.message;
+      } finally {
+        scheduleBtn.disabled = false;
+        scheduleBtn.textContent = "Schedule Interview";
       }
-
-      if (!response.ok || data.success === false) {
-        errorEl.textContent = data.message || "Failed to schedule interview";
-        return;
-      }
-
-      document.getElementById("interviewForm").reset();
-      conflictBox.style.display = "none";
-      loadScheduledInterviews();
     });
 
     document.getElementById("forceScheduleBtn").addEventListener("click", async () => {
@@ -206,14 +240,18 @@
         }
 
         listEl.innerHTML = interviews
-          .map(
-            (i) => `
+          .map((i) => {
+            const where =
+              i.mode === "online" && i.venue_or_link
+                ? `<a href="${i.venue_or_link}" target="_blank" rel="noopener">Join Google Meet</a>`
+                : i.venue_or_link;
+            return `
             <div class="drive-item">
               <div>
                 <strong>${i.student_name}</strong> — ${i.company_name}
                 <br />
                 <span style="color:#6b7280; font-size:0.85rem;">
-                  ${i.date} | ${i.start_time}-${i.end_time} | ${i.mode} | ${i.venue_or_link}
+                  ${i.date} | ${i.start_time}-${i.end_time} | ${i.mode} | ${where}
                   ${i.has_conflict ? " | ⚠ Scheduled with a conflict" : ""}
                 </span>
                 <br />
@@ -223,8 +261,8 @@
                 <button onclick="markStatus('${i.id}', 'completed')">Mark Completed</button>
                 <button onclick="markStatus('${i.id}', 'cancelled')" class="logout-btn">Cancel</button>
               </div>
-            </div>`
-          )
+            </div>`;
+          })
           .join("");
       } catch (err) {
         listEl.textContent = "Failed to load interviews: " + err.message;

@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     ai_model: str = "claude-haiku-4-5-20251001"
 
+    # Google Calendar / Meet (used to create interview meeting links).
+    # Values come from Backend/.env as GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+    # and GOOGLE_REFRESH_TOKEN. Never put the real values in this file.
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_refresh_token: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @property

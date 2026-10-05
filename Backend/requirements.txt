@@ -13,3 +13,6 @@ scikit-learn==1.9.1
 pandas==3.0.6
 joblib==1.6.0
 sentence-transformers==3.1.1
+google-api-python-client==2.149.0
+google-auth==2.35.0
+google-auth-oauthlib==1.2.1

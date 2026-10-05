@@ -3,3 +3,7 @@ Backend/venv312/
 venv/
 .env
 __pycache__/
+
+Backend/client_secret.json
+Backend/.env
+.env

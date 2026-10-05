@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="../css/dashboard.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
-  <!-- Makes a KPI card behave like a link (used by the Readiness Score card) -->
   <style>
     a.kpi-card {
       color: inherit;
@@ -134,7 +133,6 @@
     let statusChartInstance = null;
     let trendChartInstance = null;
 
-    // Readiness helpers (defined before the page starts so they are always ready)
     const RD_PAGE = "student-readiness.html";
     const RD_BANDS = {
       ready: ["Ready", "#16a34a"],
@@ -160,9 +158,6 @@
       loadStudentDashboard();
     }
 
-    // Icons that live in static markup (section headings, chart titles,
-    // card titles, "View All" links, the portal badge) are filled in here
-    // once, right after the shell renders.
     function placeStaticIcons() {
       document.getElementById("portalBadge").innerHTML = iconSpan("graduationCap", 14) + " Student Portal";
       document.getElementById("analyticsIcon").innerHTML = ICONS.barChart;
@@ -179,16 +174,16 @@
     }
 
     async function loadStudentDashboard() {
-    let applications = [];
-    let interviews = [];
-    let offers = [];
-    let openDrives = [];
-    let summary = null;
-    let eligibleCount = null;
-    let readiness = null;
-    let recommendedJobs = [];
-    let studentProfile = null;
-    let skillGap = null;
+      let applications = [];
+      let interviews = [];
+      let offers = [];
+      let openDrives = [];
+      let summary = null;
+      let eligibleCount = null;
+      let readiness = null;
+      let recommendedJobs = [];
+      let studentProfile = null;
+      let skillGap = null;
 
       try {
         const [appsRes, interviewsRes, offersRes, drivesRes, summaryRes, profileRes] = await Promise.all([
@@ -213,46 +208,37 @@
         return;
       }
 
-      // These are optional: if they fail, the rest of the dashboard still shows.
       const [
-    eligibleResult,
-    readinessResult,
-    recommendationsResult,
-    skillGapResult
-] = await Promise.allSettled([
-    apiFetch("/api/analytics/student/eligible-drives-count"),
-    apiFetch("/api/readiness/me"),
-    apiFetch("/api/recommendations/jobs"),
-    analyzeSkillGap(studentProfile),
-]);
+        eligibleResult,
+        readinessResult,
+        recommendationsResult,
+        skillGapResult
+      ] = await Promise.allSettled([
+        apiFetch("/api/analytics/student/eligible-drives-count"),
+        apiFetch("/api/readiness/me"),
+        apiFetch("/api/recommendations/jobs"),
+        analyzeSkillGap(studentProfile),
+      ]);
+
       try {
         if (eligibleResult.status === "fulfilled" && eligibleResult.value) eligibleCount = eligibleResult.value.data.count;
-      } catch (err) {
-        eligibleCount = null;
-      }
+      } catch (err) { eligibleCount = null; }
+
       try {
         if (readinessResult.status === "fulfilled" && readinessResult.value) readiness = readinessResult.value.data;
-      } catch (err) {
-        readiness = null;
-      }
+      } catch (err) { readiness = null; }
+
       try {
-    if (
-        recommendationsResult.status === "fulfilled" &&
-        recommendationsResult.value
-    ) {
-        recommendedJobs =
-            recommendationsResult.value.data || [];
-    }
-} catch (err) {
-    recommendedJobs = [];
-}
+        if (recommendationsResult.status === "fulfilled" && recommendationsResult.value) {
+          recommendedJobs = recommendationsResult.value.data || [];
+        }
+      } catch (err) { recommendedJobs = []; }
+
       try {
         if (skillGapResult.status === "fulfilled" && skillGapResult.value) {
           skillGap = skillGapResult.value;
         }
-      } catch (err) {
-        skillGap = null;
-      }
+      } catch (err) { skillGap = null; }
 
       renderStudentStats(applications, interviews, offers, summary, eligibleCount, readiness);
       renderApplicationStatusChart(applications);
@@ -265,29 +251,36 @@
       renderRecommendedJobs(recommendedJobs);
     }
 
+    // -------------------------------------------------------
+    // SKILL GAP — normalize skills (string OR array) and send
+    // -------------------------------------------------------
     async function analyzeSkillGap(studentProfile) {
-      if (!studentProfile || !studentProfile.skills || studentProfile.skills.length === 0) {
+      if (!studentProfile || !studentProfile.skills) {
         return null;
       }
 
-      // Get available roles first
+      // Handle both string ("Java, Python") and array (["Java","Python"])
+      let skills = studentProfile.skills;
+      if (typeof skills === "string") {
+        skills = skills.split(",").map(s => s.trim()).filter(Boolean);
+      }
+      if (!Array.isArray(skills) || skills.length === 0) {
+        return null;
+      }
+
       try {
         const rolesRes = await apiFetch("/api/skill-gap/roles");
         const roles = rolesRes.data || [];
 
-        if (roles.length === 0) {
-          return null;
-        }
+        if (roles.length === 0) return null;
 
-        // Analyze against the first recommended role (or most common role)
-        // In a production app, you'd let the student select their target role
         const targetRole = roles[0];
 
         const analysisRes = await apiFetch("/api/skill-gap/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            student_skills: studentProfile.skills,
+            student_skills: skills,   // always an array now
             target_role: targetRole,
           }),
         });
@@ -304,7 +297,6 @@
       const shortlisted = applications.filter((a) => a.status === "shortlisted").length;
       const upcoming = interviews.filter((i) => i.status === "scheduled").length;
 
-      // Readiness Score card: shows the score and opens the readiness page when clicked
       let readinessCard;
       if (readiness) {
         const band = rdBand(readiness);
@@ -380,6 +372,9 @@
         </div>`;
     }
 
+    // -------------------------------------------------------
+    // SKILL GAP CARD — fixed "Edit Profile" link
+    // -------------------------------------------------------
     function renderSkillGapCard(skillGap) {
       const el = document.getElementById("skillGapCardBody");
       if (!el) return;
@@ -388,7 +383,7 @@
         el.innerHTML = `
           <div class="list-row">
             <div class="list-row-sub">Add skills to your profile to see your skill gap analysis.</div>
-            <a href="student-profile.html" class="btn-primary">Edit Profile</a>
+            <a href="profile.html" class="btn-primary">Edit Profile</a>
           </div>`;
         return;
       }
@@ -524,16 +519,14 @@
 
       el.innerHTML = upcoming
         .slice(0, 5)
-        .map(
-          (i) => `
+        .map((i) => `
           <div class="list-row">
             <div>
               <div class="list-row-main">${iconSpan("building", 14)} ${i.company_name}</div>
               <div class="list-row-sub">${i.date} · ${i.start_time}–${i.end_time} · ${i.mode}</div>
             </div>
             <span class="status-badge ${i.status}">${i.status}</span>
-          </div>`
-        )
+          </div>`)
         .join("");
     }
 
@@ -547,16 +540,14 @@
       const recent = [...applications].sort((a, b) => b.applied_at.localeCompare(a.applied_at)).slice(0, 5);
 
       el.innerHTML = recent
-        .map(
-          (a) => `
+        .map((a) => `
           <div class="list-row">
             <div>
               <div class="list-row-main">${iconSpan("briefcase", 14)} ${a.drive?.job_title || "Unknown role"} — ${a.drive?.company_name || "Unknown"}</div>
               <div class="list-row-sub">Applied ${new Date(a.applied_at).toLocaleDateString()}</div>
             </div>
             <span class="status-badge ${a.status}">${a.status}</span>
-          </div>`
-        )
+          </div>`)
         .join("");
     }
 
@@ -569,8 +560,7 @@
 
       el.innerHTML = openDrives
         .slice(0, 5)
-        .map(
-          (d) => `
+        .map((d) => `
           <div class="list-row">
             <div>
               <div class="list-row-main">${iconSpan("briefcase", 14)} ${d.job_title} — ${d.company_name}</div>
@@ -581,8 +571,7 @@
               </div>
             </div>
             <a href="student-drives.html" class="btn-primary">View</a>
-          </div>`
-        )
+          </div>`)
         .join("");
     }
 
@@ -591,38 +580,26 @@
       if (!el) return;
 
       if (!jobs || jobs.length === 0) {
-        el.innerHTML = `
-            <div class="state-message">
-                No recommended jobs available right now.
-            </div>
-        `;
+        el.innerHTML = `<div class="state-message">No recommended jobs available right now.</div>`;
         return;
       }
 
       el.innerHTML = jobs.slice(0, 5).map((job, index) => `
         <div class="list-row">
-            <div>
-                <div class="list-row-main">
-                    ${iconSpan("briefcase", 14)} ${job.job_title || "Unknown Role"}
-                    — ${job.company_name || "Unknown Company"}
-                </div>
-
-                <div class="list-row-sub">
-                    <span class="meta-inline">${iconSpan("mapPin", 13)} ${job.location || "Location N/A"}</span>
-                    <span class="meta-inline">${iconSpan("wallet", 13)} CTC: ${job.ctc || "N/A"} LPA</span>
-                    <span class="meta-inline">${iconSpan("briefcase", 13)} ${job.mode || "N/A"}</span>
-                </div>
+          <div>
+            <div class="list-row-main">
+              ${iconSpan("briefcase", 14)} ${job.job_title || "Unknown Role"} — ${job.company_name || "Unknown Company"}
             </div>
-
-            <button
-                type="button"
-                class="btn-primary"
-                onclick="openRecommendedJob(${index})"
-            >
-                View Details
-            </button>
-        </div>
-      `).join("");
+            <div class="list-row-sub">
+              <span class="meta-inline">${iconSpan("mapPin", 13)} ${job.location || "Location N/A"}</span>
+              <span class="meta-inline">${iconSpan("wallet", 13)} CTC: ${job.ctc || "N/A"} LPA</span>
+              <span class="meta-inline">${iconSpan("briefcase", 13)} ${job.mode || "N/A"}</span>
+            </div>
+          </div>
+          <button type="button" class="btn-primary" onclick="openRecommendedJob(${index})">
+            View Details
+          </button>
+        </div>`).join("");
 
       window.recommendedJobsData = jobs.slice(0, 5);
     }
@@ -630,12 +607,7 @@
     function openRecommendedJob(index) {
       const job = window.recommendedJobsData[index];
       if (!job) return;
-
-      sessionStorage.setItem(
-          "selectedRecommendedJob",
-          JSON.stringify(job)
-      );
-
+      sessionStorage.setItem("selectedRecommendedJob", JSON.stringify(job));
       window.location.href = "job-details.html";
     }
   </script>

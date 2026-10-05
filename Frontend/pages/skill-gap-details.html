@@ -3,710 +3,346 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Skill Gap Analysis — CampusLink</title>
-
+    <title>Skill Gap Analysis — CampusLink</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
-
     <script src="../js/icons.js"></script>
     <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/layout.js"></script>
-
     <style>
-        :root {
-            --severity-critical: #dc2626;
-            --severity-high: #ea580c;
-            --severity-medium: #eab308;
-            --severity-low: #16a34a;
-            --matched: #10b981;
-            --missing: #f97316;
+        /* ── Layout ── */
+        .sga-wrap      { max-width: 960px; margin: 0 auto; }
+        .sga-card      { background: var(--bg-surface,#fff); border: 1px solid var(--border-color,#e5e7eb); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+
+        /* ── Role pills ── */
+        .role-pills    { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+        .role-pill {
+            padding: 8px 18px; border-radius: 20px; border: 2px solid var(--border-color,#e5e7eb);
+            background: transparent; cursor: pointer; font-weight: 600; font-size: 0.9em;
+            color: var(--text-secondary,#6b7280); transition: all .2s;
         }
+        .role-pill:hover  { border-color: #2563eb; color: #2563eb; }
+        .role-pill.active { background: #2563eb; color: #fff; border-color: #2563eb; }
 
-        .skill-gap-container { max-width: 1000px; margin: 0 auto; }
+        /* ── Match bar ── */
+        .match-hero { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin-bottom: 20px; }
+        .match-pct  { font-size: 3.6em; font-weight: 800; line-height: 1; color: #2563eb; }
+        .match-bar-wrap { flex: 1; min-width: 180px; }
+        .match-bar  { height: 14px; background: var(--border-color,#e5e7eb); border-radius: 7px; overflow: hidden; margin: 10px 0; }
+        .match-bar-fill { height: 100%; background: linear-gradient(90deg,#10b981,#2563eb); transition: width .6s ease; border-radius: 7px; }
 
-        /* === Severity Badge === */
-        .severity-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            margin: 16px 0;
+        /* ── Severity badge ── */
+        .sev-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: .9em; margin-top: 4px; }
+        .sev-low      { background: rgba(16,185,129,.12); color: #059669; border: 1px solid #059669; }
+        .sev-medium   { background: rgba(234,179,8,.12);  color: #b45309; border: 1px solid #b45309; }
+        .sev-high     { background: rgba(249,115,22,.12); color: #c2410c; border: 1px solid #c2410c; }
+        .sev-critical { background: rgba(220,38,38,.12);  color: #b91c1c; border: 1px solid #b91c1c; }
+
+        /* ── Stats grid ── */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(130px,1fr)); gap: 14px; margin-top: 20px; }
+        .stat-box   { background: var(--bg-surface-alt,#f1f5f9); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid var(--border-color,#e5e7eb); }
+        .stat-val   { font-size: 2em; font-weight: 800; color: #2563eb; line-height: 1; }
+        .stat-lbl   { font-size: .82em; color: var(--text-muted,#9ca3af); margin-top: 6px; font-weight: 500; }
+
+        /* ── Tabs ── */
+        .tabs       { display: flex; gap: 4px; border-bottom: 2px solid var(--border-color,#e5e7eb); margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn    { padding: 11px 18px; border: none; background: transparent; cursor: pointer; font-weight: 600; font-size: .93em; color: var(--text-muted,#9ca3af); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s; }
+        .tab-btn:hover  { color: var(--text-primary,#111); }
+        .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+        .tab-pane   { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* ── Skill badges (matched) ── */
+        .skill-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .skill-badge  { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 20px; font-weight: 600; font-size: .88em; }
+        .badge-green  { background: rgba(16,185,129,.12); color: #059669; border: 1px solid #059669; }
+
+        /* ── Missing skill cards ── */
+        .missing-list   { display: grid; gap: 18px; margin-top: 10px; }
+        .missing-card   {
+            border: 1px solid var(--border-color,#e5e7eb); border-radius: 12px;
+            padding: 20px; background: var(--bg-surface,#fff);
+            border-left: 5px solid #f97316;
         }
+        .missing-card-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+        .missing-name  { font-size: 1.1em; font-weight: 700; color: var(--text-primary,#111); }
+        .missing-cat   { font-size: .82em; color: var(--text-muted,#9ca3af); margin-top: 3px; }
+        .time-badge    { background: #fff7ed; color: #c2410c; border: 1px solid #f97316; border-radius: 8px; padding: 5px 12px; font-size: .82em; font-weight: 700; white-space: nowrap; }
 
-        .severity-badge.critical { 
-            background: rgba(220, 38, 38, 0.1);
-            color: var(--severity-critical);
-            border: 1px solid var(--severity-critical);
+        /* ── Resource buttons ── */
+        .resource-list  { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+        .res-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 13px; border-radius: 8px; font-size: .83em; font-weight: 600;
+            text-decoration: none; cursor: pointer; transition: all .2s;
+            border: 1.5px solid;
         }
+        .res-tutorial { background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; }
+        .res-tutorial:hover { background: #1d4ed8; color: #fff; }
+        .res-video    { background: #fff1f2; color: #be123c; border-color: #fda4af; }
+        .res-video:hover { background: #be123c; color: #fff; }
+        .res-practice { background: #f0fdf4; color: #15803d; border-color: #86efac; }
+        .res-practice:hover { background: #15803d; color: #fff; }
+        .res-course   { background: #faf5ff; color: #7e22ce; border-color: #d8b4fe; }
+        .res-course:hover { background: #7e22ce; color: #fff; }
+        .res-docs     { background: #f0f9ff; color: #0369a1; border-color: #7dd3fc; }
+        .res-docs:hover { background: #0369a1; color: #fff; }
 
-        .severity-badge.high { 
-            background: rgba(234, 88, 12, 0.1);
-            color: var(--severity-high);
-            border: 1px solid var(--severity-high);
-        }
+        /* ── Spinner / error ── */
+        .sga-loading { display: flex; align-items: center; gap: 12px; padding: 30px; color: var(--text-muted,#9ca3af); }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid var(--border-color,#e5e7eb); border-top-color: #2563eb; border-radius: 50%; animation: spin .7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .sga-error { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 10px; padding: 16px; color: #b91c1c; margin-top: 10px; }
 
-        .severity-badge.medium { 
-            background: rgba(234, 179, 8, 0.1);
-            color: var(--severity-medium);
-            border: 1px solid var(--severity-medium);
-        }
+        /* ── Empty state ── */
+        .sga-empty { text-align: center; padding: 40px 20px; color: var(--text-muted,#9ca3af); }
+        .sga-empty a { color: #2563eb; font-weight: 600; }
 
-        .severity-badge.low { 
-            background: rgba(22, 163, 74, 0.1);
-            color: var(--severity-low);
-            border: 1px solid var(--severity-low);
-        }
+        /* ── Back button ── */
+        .back-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: 1.5px solid var(--border-color,#e5e7eb); border-radius: 8px; background: var(--bg-surface,#fff); color: var(--text-primary,#111); font-weight: 600; text-decoration: none; transition: all .2s; margin-top: 8px; }
+        .back-btn:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
 
-        .severity-icon { font-size: 1.2em; }
-
-        /* === Match Metrics === */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 16px;
-            margin: 24px 0;
-        }
-
-        .metric-card {
-            background: var(--bg-surface-alt, #f1f5f9);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-        }
-
-        .metric-value {
-            font-size: 2.5em;
-            font-weight: 700;
-            line-height: 1;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .metric-label {
-            font-size: 0.9em;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        /* === Match Bar === */
-        .match-bar {
-            height: 16px;
-            background: var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
-            margin: 20px 0;
-        }
-
-        .match-bar-fill {
-            height: 100%;
-            background: linear-gradient(to right, #10b981 0%, #3b82f6 50%, #f97316 100%);
-            transition: width 0.3s ease;
-        }
-
-        /* === Tabs === */
-        .tab-buttons {
-            display: flex;
-            gap: 8px;
-            border-bottom: 1px solid var(--border-color);
-            margin: 24px 0 16px;
-            flex-wrap: wrap;
-        }
-
-        .tab-button {
-            padding: 12px 16px;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            font-weight: 500;
-            color: var(--text-muted);
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s ease;
-        }
-
-        .tab-button:hover { color: var(--text-primary); }
-
-        .tab-button.active {
-            color: var(--accent);
-            border-bottom-color: var(--accent);
-        }
-
-        .tab-content { display: none; }
-
-        .tab-content.active { display: block; }
-
-        /* === Skills List === */
-        .skills-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
-            margin: 16px 0;
-        }
-
-        .skill-badge {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 500;
-            border: 1px solid;
-            transition: all 0.2s ease;
-        }
-
-        .skill-badge.matched {
-            background: rgba(16, 185, 129, 0.1);
-            border-color: var(--matched);
-            color: var(--matched);
-        }
-
-        .skill-badge.missing {
-            background: rgba(249, 115, 22, 0.1);
-            border-color: var(--missing);
-            color: var(--missing);
-        }
-
-        .skill-badge.proficiency-gap {
-            background: rgba(234, 179, 8, 0.1);
-            border-color: var(--severity-medium);
-            color: var(--severity-medium);
-        }
-
-        .skill-icon { font-size: 1.2em; }
-
-        /* === Learning Path === */
-        .learning-path {
-            display: grid;
-            gap: 16px;
-            margin: 16px 0;
-        }
-
-        .learning-step {
-            background: var(--bg-surface);
-            border-left: 4px solid var(--accent);
-            border-radius: 8px;
-            padding: 16px;
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 20px;
-        }
-
-        .step-content h4 {
-            margin: 0 0 8px;
-            font-size: 1.1em;
-        }
-
-        .step-meta {
-            display: flex;
-            gap: 16px;
-            margin: 8px 0;
-            flex-wrap: wrap;
-        }
-
-        .step-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.9em;
-            color: var(--text-muted);
-        }
-
-        .step-resources {
-            margin-top: 12px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .resource-link {
-            padding: 4px 10px;
-            background: var(--bg-surface-alt);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 0.85em;
-            text-decoration: none;
-            color: var(--accent);
-            transition: all 0.2s ease;
-        }
-
-        .resource-link:hover {
-            background: var(--accent);
-            color: white;
-        }
-
-        .step-timeline {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            justify-content: center;
-            text-align: right;
-        }
-
-        .step-hours {
-            font-weight: 700;
-            font-size: 1.4em;
-            color: var(--accent);
-        }
-
-        .step-weeks {
-            font-size: 0.85em;
-            color: var(--text-muted);
-        }
-
-        /* === Prerequisites === */
-        .prerequisites-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin: 4px 4px 4px 0;
-            padding: 4px 8px;
-            background: var(--bg-surface-alt);
-            border-radius: 4px;
-            font-size: 0.8em;
-            color: var(--text-secondary);
-        }
-
-        /* === Quick Wins === */
-        .quick-wins {
-            display: grid;
-            gap: 12px;
-            margin: 16px 0;
-        }
-
-        .quick-win {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1));
-            border-left: 4px solid var(--matched);
-            border-radius: 8px;
-            padding: 16px;
-        }
-
-        /* === Loading & Error === */
-        .loading, .error-message {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 24px;
-            border-radius: 8px;
-        }
-
-        .loading {
-            background: var(--bg-surface-alt);
-            color: var(--text-muted);
-        }
-
-        .error-message {
-            background: rgba(220, 38, 38, 0.1);
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            color: var(--severity-critical);
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid var(--border-color);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* === Responsive === */
-        @media (max-width: 768px) {
-            .learning-step {
-                grid-template-columns: 1fr;
-            }
-            
-            .step-timeline {
-                align-items: flex-start;
-                text-align: left;
-            }
-
-            .metrics-grid {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            }
+        @media (max-width: 600px) {
+            .match-pct { font-size: 2.6em; }
+            .sga-card  { padding: 16px; }
+            .tab-btn   { padding: 9px 12px; font-size: .85em; }
         }
     </style>
 </head>
-
 <body>
-    <div class="app-shell" id="app-shell"></div>
 
-    <div id="page-content" style="display:none;">
-        <div class="page-shell">
-            <header class="dashboard-header">
-                <div>
-                    <h2>Skill Gap Analysis</h2>
-                    <p class="welcome-subtitle">Identify your growth opportunities and create a learning roadmap.</p>
+<div class="app-shell" id="app-shell"></div>
+
+<div id="page-content" style="display:none;">
+    <div class="page-shell">
+        <header class="dashboard-header">
+            <div>
+                <h2>Skill Gap Analysis</h2>
+                <p class="welcome-subtitle">See what skills you need and where to learn them — all free.</p>
+            </div>
+        </header>
+
+        <div class="sga-wrap">
+
+            <!-- Role selector -->
+            <div class="sga-card">
+                <h3 style="margin:0 0 4px;">Select Target Role</h3>
+                <p style="color:var(--text-muted,#9ca3af);margin:0 0 4px;font-size:.9em;">Your profile skills will be compared against the role requirements.</p>
+                <div class="role-pills" id="rolePills">
+                    <div class="sga-loading"><span class="spinner"></span> Loading roles…</div>
                 </div>
-            </header>
+            </div>
 
-            <div class="skill-gap-container">
-                <!-- Role Selector -->
-                <div class="card">
-                    <h3>Select Target Role</h3>
-                    <div id="roleSelector" class="role-selector" style="display: flex; gap: 12px; flex-wrap: wrap;"></div>
-                </div>
+            <!-- Main result -->
+            <div class="sga-card" id="resultCard">
+                <div class="sga-loading"><span class="spinner"></span> Analyzing your skills…</div>
+            </div>
 
-                <!-- Analysis Overview -->
-                <div class="card">
-                    <div id="analysisContent">
-                        <div class="loading"><span class="spinner"></span>Analyzing your skills...</div>
-                    </div>
-                </div>
-
-                <!-- Tabs -->
-                <div class="card">
-                    <div class="tab-buttons">
-                        <button class="tab-button active" onclick="switchTab('matched')">✓ Your Skills</button>
-                        <button class="tab-button" onclick="switchTab('gaps')">⚠ Skill Gaps</button>
-                        <button class="tab-button" onclick="switchTab('learning')">📚 Learning Path</button>
-                        <button class="tab-button" onclick="switchTab('quick')">⚡ Quick Wins</button>
-                    </div>
-
-                    <!-- Tab: Matched Skills -->
-                    <div id="matched" class="tab-content active">
-                        <h3 style="margin-top: 0;">Skills You Have</h3>
-                        <div id="matchedContent">
-                            <div class="loading"><span class="spinner"></span>Loading...</div>
-                        </div>
-                    </div>
-
-                    <!-- Tab: Missing Skills & Proficiency Gaps -->
-                    <div id="gaps" class="tab-content">
-                        <h3 style="margin-top: 0;">Skills to Develop</h3>
-                        <div id="gapsContent">
-                            <div class="loading"><span class="spinner"></span>Loading...</div>
-                        </div>
-                    </div>
-
-                    <!-- Tab: Learning Path -->
-                    <div id="learning" class="tab-content">
-                        <h3 style="margin-top: 0;">Recommended Learning Path</h3>
-                        <div id="learningContent">
-                            <div class="loading"><span class="spinner"></span>Building learning path...</div>
-                        </div>
-                    </div>
-
-                    <!-- Tab: Quick Wins -->
-                    <div id="quick" class="tab-content">
-                        <h3 style="margin-top: 0;">Start Here: Skills You Can Master Quickly</h3>
-                        <div id="quickContent">
-                            <div class="loading"><span class="spinner"></span>Finding quick wins...</div>
-                        </div>
-                    </div>
+            <!-- Tabs -->
+            <div class="sga-card" id="tabCard" style="display:none;">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('matched',this)">✅ Skills You Have</button>
+                    <button class="tab-btn"         onclick="switchTab('missing',this)">📚 Skills to Learn</button>
                 </div>
 
-                <!-- Back Button -->
-                <div style="margin: 32px 0; text-align: center;">
-                    <a href="student-dashboard.html" class="btn-outline">← Back to Dashboard</a>
+                <div id="matched" class="tab-pane active">
+                    <div id="matchedContent"></div>
+                </div>
+                <div id="missing" class="tab-pane">
+                    <div id="missingContent"></div>
+                </div>
+            </div>
+
+            <!-- Back -->
+            <a href="student-dashboard.html" class="back-btn">← Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<script>
+const user = requireAuth(["student"]);
+let studentSkills = [];
+let availableRoles = [];
+
+if (user) {
+    renderShell(user, "student-dashboard.html");
+    init();
+}
+
+async function init() {
+    try {
+        // Load profile and roles in parallel
+        const [profileRes, rolesRes] = await Promise.all([
+            apiFetch("/api/students/me"),
+            apiFetch("/api/skill-gap/roles"),
+        ]);
+
+        const profile = profileRes.data;
+        availableRoles = rolesRes.data || [];
+
+        // Normalize skills — handle string or array
+        let raw = profile.skills || [];
+        if (typeof raw === "string") {
+            raw = raw.split(",").map(s => s.trim()).filter(Boolean);
+        }
+        studentSkills = raw;
+
+        if (studentSkills.length === 0) {
+            document.getElementById("resultCard").innerHTML = `
+                <div class="sga-empty">
+                    <div style="font-size:2.5em;margin-bottom:12px;">📋</div>
+                    <p>You haven't added any skills yet.</p>
+                    <a href="profile.html">Go to Profile → add your skills</a>
+                </div>`;
+            document.getElementById("rolePills").innerHTML = "";
+            return;
+        }
+
+        renderRolePills(availableRoles);
+
+        // Auto-analyze first role
+        if (availableRoles.length > 0) {
+            await analyze(availableRoles[0]);
+        }
+
+    } catch (err) {
+        console.error(err);
+        document.getElementById("resultCard").innerHTML =
+            `<div class="sga-error">Failed to load data. Please refresh and try again.</div>`;
+    }
+}
+
+function renderRolePills(roles) {
+    document.getElementById("rolePills").innerHTML = roles.map((r, i) => `
+        <button class="role-pill ${i === 0 ? "active" : ""}"
+                onclick="selectRole(this, '${r}')">${capitalize(r)}</button>
+    `).join("");
+}
+
+async function selectRole(btn, role) {
+    document.querySelectorAll(".role-pill").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    await analyze(role);
+}
+
+async function analyze(role) {
+    document.getElementById("resultCard").innerHTML =
+        `<div class="sga-loading"><span class="spinner"></span> Analyzing for <strong>${capitalize(role)}</strong>…</div>`;
+    document.getElementById("tabCard").style.display = "none";
+
+    try {
+        const res = await apiFetch("/api/skill-gap/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ student_skills: studentSkills, target_role: role }),
+        });
+
+        renderResult(res.data);
+    } catch (err) {
+        document.getElementById("resultCard").innerHTML =
+            `<div class="sga-error">Analysis failed: ${err.message}</div>`;
+    }
+}
+
+function renderResult(d) {
+    const sevClass = { low: "sev-low", medium: "sev-medium", high: "sev-high", critical: "sev-critical" };
+    const sevIcon  = { low: "✅", medium: "🟡", high: "🟠", critical: "🔴" };
+
+    // ── Overview card ──
+    document.getElementById("resultCard").innerHTML = `
+        <div class="match-hero">
+            <div class="match-pct">${d.match_percentage}%</div>
+            <div class="match-bar-wrap">
+                <div style="font-size:1.15em;font-weight:700;">${capitalize(d.target_role)}</div>
+                <div class="match-bar">
+                    <div class="match-bar-fill" style="width:${d.match_percentage}%"></div>
+                </div>
+                <div class="sev-badge ${sevClass[d.severity] || "sev-high"}">
+                    ${sevIcon[d.severity] || "⚠"} ${d.severity_label}
                 </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        const user = requireAuth(["student"]);
-        let availableRoles = [];
-        let studentProfile = null;
-        let currentAnalysis = null;
+        <div class="stats-grid">
+            <div class="stat-box"><div class="stat-val">${d.matched_count}</div><div class="stat-lbl">Skills Matched</div></div>
+            <div class="stat-box"><div class="stat-val">${d.missing_count}</div><div class="stat-lbl">Skills to Learn</div></div>
+            <div class="stat-box"><div class="stat-val">${d.total_required_skills}</div><div class="stat-lbl">Total Required</div></div>
+            <div class="stat-box"><div class="stat-val">${d.estimated_weeks}w</div><div class="stat-lbl">Est. Study Time</div></div>
+        </div>
+    `;
 
-        if (user) {
-            renderShell(user, "skill-gap-analysis-advanced.html");
-            initializePage();
-        }
+    // ── Matched skills tab ──
+    if (d.matched_skills.length > 0) {
+        document.getElementById("matchedContent").innerHTML = `
+            <p style="color:var(--text-muted,#9ca3af);margin-bottom:6px;">
+                You already have <strong>${d.matched_count}</strong> of the required skills. 
+            </p>
+            <div class="skill-badges">
+                ${d.matched_skills.map(s => `
+                    <div class="skill-badge badge-green">✓ ${esc(s.name)}</div>
+                `).join("")}
+            </div>`;
+    } else {
+        document.getElementById("matchedContent").innerHTML =
+            `<p style="color:var(--text-muted,#9ca3af);">No matched skills yet. Start with the learning resources below!</p>`;
+    }
 
-        async function initializePage() {
-            try {
-                // Fetch roles
-                const rolesRes = await apiFetch("/api/skill-gap/roles");
-                availableRoles = rolesRes.data || [];
-
-                // Fetch student profile
-                const profileRes = await apiFetch("/api/students/me");
-                studentProfile = profileRes.data;
-
-                if (!studentProfile?.skills?.length) {
-                    showError("No skills found. Please add skills to your profile first.");
-                    return;
-                }
-
-                renderRoleButtons(availableRoles);
-
-                // Analyze first role
-                if (availableRoles.length > 0) {
-                    await analyzeRole(availableRoles[0]);
-                }
-            } catch (err) {
-                console.error("Failed to load:", err);
-                showError("Failed to load skill gap data. Please try again.");
-            }
-        }
-
-        function renderRoleButtons(roles) {
-            const container = document.getElementById("roleSelector");
-            container.innerHTML = roles
-                .map((role, i) => `
-                    <button 
-                        class="role-button ${i === 0 ? "active" : ""}"
-                        onclick="analyzeRole('${role}')"
-                        style="padding: 8px 16px; border: 2px solid var(--border-color); background: transparent; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s ease; color: var(--text-secondary);"
-                    >
-                        ${role.charAt(0).toUpperCase() + role.slice(1)}
-                    </button>
-                `)
-                .join("");
-        }
-
-        async function analyzeRole(role) {
-            // Update active button
-            document.querySelectorAll(".role-button").forEach(btn => {
-                btn.classList.remove("active");
-                if (btn.textContent.toLowerCase() === role.toLowerCase()) {
-                    btn.classList.add("active");
-                    btn.style.backgroundColor = "var(--accent)";
-                    btn.style.color = "white";
-                    btn.style.borderColor = "var(--accent)";
-                }
-            });
-
-            // Clear tabs
-            document.getElementById("matchedContent").innerHTML = '<div class="loading"><span class="spinner"></span>Loading...</div>';
-            document.getElementById("gapsContent").innerHTML = '<div class="loading"><span class="spinner"></span>Loading...</div>';
-            document.getElementById("learningContent").innerHTML = '<div class="loading"><span class="spinner"></span>Building path...</div>';
-            document.getElementById("quickContent").innerHTML = '<div class="loading"><span class="spinner"></span>Finding quick wins...</div>';
-
-            try {
-                const analysisRes = await apiFetch("/api/skill-gap/analyze", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        student_skills: studentProfile.skills,
-                        target_role: role,
-                    }),
-                });
-
-                currentAnalysis = analysisRes.data;
-                renderAnalysis(currentAnalysis);
-                switchTab("matched");
-            } catch (err) {
-                console.error("Analysis failed:", err);
-                showError("Failed to analyze skills for this role.");
-            }
-        }
-
-        function renderAnalysis(analysis) {
-            if (!analysis) return;
-
-            const { match_percentage, severity, severity_description, total_required_skills, 
-                    matched_count, missing_count, proficiency_gap_count, matched_skills, 
-                    missing_skills, proficiency_gaps, learning_path, total_learning_hours, 
-                    estimated_weeks, priority_order } = analysis;
-
-            // Main overview
-            const severityIcons = {
-                critical: "🔴",
-                high: "🟠",
-                medium: "🟡",
-                low: "🟢",
-            };
-
-            document.getElementById("analysisContent").innerHTML = `
-                <div>
-                    <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: 20px;">
-                        <div style="font-size: 3.5em; font-weight: 700; color: var(--accent);">${match_percentage}%</div>
-                        <div>
-                            <div style="font-size: 1.3em; font-weight: 600;">${severity_description}</div>
-                            <div style="color: var(--text-muted); margin-top: 4px;">Match score for ${analysis.target_role}</div>
+    // ── Missing skills tab ──
+    if (d.missing_skills.length > 0) {
+        document.getElementById("missingContent").innerHTML = `
+            <p style="color:var(--text-muted,#9ca3af);margin-bottom:14px;">
+                Learn these <strong>${d.missing_count}</strong> skills to become job-ready.
+                Click any button to start learning — all resources are <strong>free</strong>.
+            </p>
+            <div class="missing-list">
+                ${d.missing_skills.map(s => `
+                    <div class="missing-card">
+                        <div class="missing-card-head">
+                            <div>
+                                <div class="missing-name">${esc(s.name)}</div>
+                                <div class="missing-cat">${esc(s.category)}</div>
+                            </div>
+                            <div class="time-badge">⏱ ~${s.learning_hours}h · ${s.learning_weeks} week${s.learning_weeks > 1 ? "s" : ""}</div>
+                        </div>
+                        <div class="resource-list">
+                            ${s.resources.map(r => `
+                                <a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer"
+                                   class="res-btn res-${r.type}">
+                                    ${r.icon} ${esc(r.name)}
+                                </a>
+                            `).join("")}
                         </div>
                     </div>
+                `).join("")}
+            </div>`;
+    } else {
+        document.getElementById("missingContent").innerHTML = `
+            <div class="sga-empty">
+                <div style="font-size:2.5em;margin-bottom:8px;">🎉</div>
+                <p>You have all required skills for this role!</p>
+            </div>`;
+    }
 
-                    <div class="match-bar">
-                        <div class="match-bar-fill" style="width: ${match_percentage}%"></div>
-                    </div>
+    document.getElementById("tabCard").style.display = "block";
+}
 
-                    <div class="severity-badge ${severity}">
-                        <span class="severity-icon">${severityIcons[severity]}</span>
-                        <span>Severity: ${severity.toUpperCase()}</span>
-                    </div>
+function switchTab(id, btn) {
+    document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    btn.classList.add("active");
+}
 
-                    <div class="metrics-grid">
-                        <div class="metric-card">
-                            <div class="metric-value">${matched_count}</div>
-                            <div class="metric-label">Skills Matched</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-value">${missing_count + proficiency_gap_count}</div>
-                            <div class="metric-label">Skills to Learn</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-value">${total_required_skills}</div>
-                            <div class="metric-label">Total Required</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-value">${estimated_weeks}</div>
-                            <div class="metric-label">Weeks to Complete</div>
-                        </div>
-                    </div>
+function capitalize(s) {
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+}
 
-                    ${priority_order.length > 0 ? `
-                        <div style="margin-top: 20px; padding: 16px; background: var(--bg-surface-alt); border-radius: 8px; border-left: 4px solid var(--accent);">
-                            <strong>Top Priorities:</strong>
-                            <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
-                                ${priority_order.slice(0, 5).map(s => `
-                                    <span style="background: var(--accent); color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.9em;">
-                                        ${s}
-                                    </span>
-                                `).join("")}
-                            </div>
-                        </div>
-                    ` : ""}
-                </div>
-            `;
+function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c =>
+        ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+</script>
 
-            // Matched skills
-            if (matched_skills.length > 0) {
-                document.getElementById("matchedContent").innerHTML = `
-                    <div class="skills-list">
-                        ${matched_skills.map(s => `
-                            <div class="skill-badge matched">
-                                <span class="skill-icon">✓</span>
-                                <span>${s.skill}</span>
-                            </div>
-                        `).join("")}
-                    </div>
-                    <p style="color: var(--text-muted); margin-top: 16px;">Great! You already have ${matched_skills.length} of the required skills.</p>
-                `;
-            } else {
-                document.getElementById("matchedContent").innerHTML = '<p style="color: var(--text-muted);">No matched skills yet. Start with the learning path below.</p>';
-            }
-
-            // Gaps
-            let gapsHtml = "";
-            if (proficiency_gaps.length > 0) {
-                gapsHtml += `
-                    <h4>Skills to Improve</h4>
-                    <div class="skills-list">
-                        ${proficiency_gaps.map(g => `
-                            <div class="skill-badge proficiency-gap" title="Current: ${g.current_level}, Required: ${g.required_level}">
-                                <span class="skill-icon">📈</span>
-                                <span>${g.skill}</span>
-                            </div>
-                        `).join("")}
-                    </div>
-                `;
-            }
-
-            if (missing_skills.length > 0) {
-                gapsHtml += `
-                    <h4 style="margin-top: 20px;">New Skills to Learn</h4>
-                    <div class="skills-list">
-                        ${missing_skills.map(s => `
-                            <div class="skill-badge missing">
-                                <span class="skill-icon">➕</span>
-                                <span>${s}</span>
-                            </div>
-                        `).join("")}
-                    </div>
-                `;
-            }
-
-            document.getElementById("gapsContent").innerHTML = gapsHtml || '<p style="color: var(--text-muted);">No gaps identified!</p>';
-
-            // Learning path
-            if (learning_path.length > 0) {
-                document.getElementById("learningContent").innerHTML = `
-                    <div class="learning-path">
-                        ${learning_path.map((step, i) => `
-                            <div class="learning-step">
-                                <div class="step-content">
-                                    <h4>Step ${i + 1}: ${step.skill}</h4>
-                                    <div class="step-meta">
-                                        <span class="step-meta-item">📚 ${step.category}</span>
-                                        <span class="step-meta-item">📊 ${step.difficulty}</span>
-                                    </div>
-                                    ${step.prerequisites.length > 0 ? `
-                                        <div style="margin-top: 8px; font-size: 0.85em; color: var(--text-muted);">
-                                            <strong>Prerequisites:</strong>
-                                            ${step.prerequisites.map(p => `<span class="prerequisites-tag">${p}</span>`).join("")}
-                                        </div>
-                                    ` : ""}
-                                    ${step.resources.length > 0 ? `
-                                        <div class="step-resources">
-                                            ${step.resources.slice(0, 3).map(r => `
-                                                <a href="${r.url}" target="_blank" class="resource-link">
-                                                    ${r.name}
-                                                </a>
-                                            `).join("")}
-                                        </div>
-                                    ` : ""}
-                                </div>
-                                <div class="step-timeline">
-                                    <div class="step-hours">${step.learning_hours}h</div>
-                                    <div class="step-weeks">${Math.ceil(step.learning_hours / 20)} weeks</div>
-                                </div>
-                            </div>
-                        `).join("")}
-                    </div>
-                    <div style="margin-top: 20px; padding: 16px; background: var(--bg-surface-alt); border-radius: 8px; text-align: center;">
-                        <strong>Total Time Commitment: ${total_learning_hours} hours (~${estimated_weeks} weeks)</strong>
-                    </div>
-                `;
-            }
-
-            // Quick wins
-            const quickWins = learning_path.filter(s => s.learning_hours < 50).slice(0, 3);
-            if (quickWins.length > 0) {
-                document.getElementById("quickContent").innerHTML = `
-                    <div class="quick-wins">
-                        ${quickWins.map(w => `
-                            <div class="quick-win">
-                                <h4 style="margin: 0 0 8px;">${w.skill}</h4>
-                                <p style="margin: 0; font-size: 0.9em; color: var(--text-muted);">
-                                    Learn in just <strong>${w.learning_hours} hours</strong> — about ${Math.ceil(w.learning_hours / 20)} weeks
-                                </p>
-                                ${w.resources.length > 0 ? `
-                                    <div class="step-resources" style="margin-top: 10px;">
-                                        ${w.resources.slice(0, 2).map(r => `
-                                            <a href="${r.url}" target="_blank" class="resource-link">
-                                                ${r.name}
-                                            </a>
-                                        `).join("")}
-                                    </div>
-                                ` : ""}
-                            </div>
-                        `).join("")}
-                    </div>
-                `;
-            }
-        }
-
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
-            document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
-
-            // Show selected tab
-            document.getElementById(tabName).classList.add("active");
-            event.target.classList.add("active");
-        }
-
-        function showError(message) {
-            document.getElementById("analysisContent").innerHTML = `
-                <div class="error-message">
-                    ${message}
-                </div>
-            `;
-        }
-    </script>
 </body>
 </html>

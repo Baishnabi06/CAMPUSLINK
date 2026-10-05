@@ -1,697 +1,665 @@
 """
-Enhanced Skill Gap Analysis Service
-
-Provides accurate skill gap analysis with:
-- Proficiency levels (beginner, intermediate, advanced)
-- Skill prerequisites and dependencies
-- Learning path recommendations
-- Resource suggestions
-- Time estimates for learning
-- Skill categories and domains
-- Severity and priority assessment
+Skill Gap Analysis Service
+Analyzes student skills vs role requirements.
+Returns missing skills with FREE online learning resources.
 """
 
-from enum import Enum
-from typing import List, Dict, Tuple
-from dataclasses import dataclass
-
-
-class ProficiencyLevel(str, Enum):
-    BEGINNER = "beginner"
-    INTERMEDIATE = "intermediate"
-    ADVANCED = "advanced"
-    EXPERT = "expert"
-
+from dataclasses import dataclass, field
+from typing import List, Dict
 
 @dataclass
-class Skill:
+class SkillResource:
+    name: str
+    url: str
+    type: str   # "tutorial" | "video" | "practice" | "course" | "docs"
+    free: bool = True
+
+@dataclass
+class SkillInfo:
     name: str
     category: str
-    domain: str
-    required_level: ProficiencyLevel
-    importance_weight: float  # 0.5 to 1.5 (1.0 is normal)
-    prerequisites: List[str]  # Other skills needed first
-    learning_time_hours: int  # Estimated hours to reach required level
-    resources: List[Dict[str, str]]  # [{name, url, type}]
+    learning_hours: int
+    resources: List[Dict[str, str]] = field(default_factory=list)
 
+# ===========================================================
+# SKILL DATABASE  —  each skill has 3-5 free resource links
+# ===========================================================
+SKILL_DATABASE: Dict[str, SkillInfo] = {
 
-# Comprehensive skill database with metadata
-SKILL_DATABASE = {
-    # === Core Programming Languages ===
-    "python": Skill(
-        name="Python",
-        category="Programming Language",
-        domain="Backend & Data",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.4,
-        prerequisites=[],
-        learning_time_hours=120,
+    # ── Programming Languages ──────────────────────────────
+    "python": SkillInfo(
+        name="Python", category="Programming Language", learning_hours=80,
         resources=[
-            {"name": "Python Official Docs", "url": "https://docs.python.org", "type": "documentation"},
-            {"name": "Real Python", "url": "https://realpython.com", "type": "tutorial"},
-            {"name": "LeetCode", "url": "https://leetcode.com", "type": "practice"},
+            {"name": "W3Schools Python",      "url": "https://www.w3schools.com/python/",                    "type": "tutorial"},
+            {"name": "GeeksforGeeks Python",  "url": "https://www.geeksforgeeks.org/python-programming-language/", "type": "tutorial"},
+            {"name": "Python Official Docs",  "url": "https://docs.python.org/3/tutorial/",                  "type": "docs"},
+            {"name": "freeCodeCamp Python",   "url": "https://www.freecodecamp.org/learn/scientific-computing-with-python/", "type": "course"},
+            {"name": "Python on YouTube",     "url": "https://www.youtube.com/watch?v=_uQrJ0TkZlc",         "type": "video"},
         ]
     ),
-    "java": Skill(
-        name="Java",
-        category="Programming Language",
-        domain="Backend & Enterprise",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.2,
-        prerequisites=["dsa"],
-        learning_time_hours=140,
+    "java": SkillInfo(
+        name="Java", category="Programming Language", learning_hours=100,
         resources=[
-            {"name": "Oracle Java Docs", "url": "https://docs.oracle.com/javase", "type": "documentation"},
-            {"name": "Codecademy Java", "url": "https://codecademy.com", "type": "course"},
+            {"name": "W3Schools Java",        "url": "https://www.w3schools.com/java/",                      "type": "tutorial"},
+            {"name": "GeeksforGeeks Java",    "url": "https://www.geeksforgeeks.org/java/",                  "type": "tutorial"},
+            {"name": "Java Official Tutorials","url": "https://docs.oracle.com/javase/tutorial/",            "type": "docs"},
+            {"name": "Java on YouTube (Telusko)", "url": "https://www.youtube.com/watch?v=BGTx91t8q50",      "type": "video"},
+            {"name": "Programiz Java",        "url": "https://www.programiz.com/java-programming",           "type": "tutorial"},
         ]
     ),
-    "javascript": Skill(
-        name="JavaScript",
-        category="Programming Language",
-        domain="Frontend & Full-stack",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.4,
-        prerequisites=[],
-        learning_time_hours=100,
+    "c++": SkillInfo(
+        name="C++", category="Programming Language", learning_hours=100,
         resources=[
-            {"name": "MDN Web Docs", "url": "https://developer.mozilla.org", "type": "documentation"},
-            {"name": "JavaScript.info", "url": "https://javascript.info", "type": "tutorial"},
+            {"name": "W3Schools C++",         "url": "https://www.w3schools.com/cpp/",                       "type": "tutorial"},
+            {"name": "GeeksforGeeks C++",     "url": "https://www.geeksforgeeks.org/c-plus-plus/",           "type": "tutorial"},
+            {"name": "cppreference",          "url": "https://en.cppreference.com/w/",                       "type": "docs"},
+            {"name": "LearnCpp",              "url": "https://www.learncpp.com/",                            "type": "tutorial"},
+            {"name": "C++ on YouTube",        "url": "https://www.youtube.com/watch?v=vLnPwxZdW4Y",          "type": "video"},
         ]
     ),
-    "c++": Skill(
-        name="C++",
-        category="Programming Language",
-        domain="Systems & Performance",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.1,
-        prerequisites=["dsa"],
-        learning_time_hours=160,
+    "c": SkillInfo(
+        name="C", category="Programming Language", learning_hours=80,
         resources=[
-            {"name": "cppreference", "url": "https://en.cppreference.com", "type": "documentation"},
-            {"name": "LeetCode C++", "url": "https://leetcode.com", "type": "practice"},
+            {"name": "W3Schools C",           "url": "https://www.w3schools.com/c/",                         "type": "tutorial"},
+            {"name": "GeeksforGeeks C",       "url": "https://www.geeksforgeeks.org/c-programming-language/","type": "tutorial"},
+            {"name": "Programiz C",           "url": "https://www.programiz.com/c-programming",              "type": "tutorial"},
+            {"name": "C on YouTube",          "url": "https://www.youtube.com/watch?v=KJgsSFOSQv0",          "type": "video"},
         ]
     ),
-
-    # === Foundational Skills ===
-    "dsa": Skill(
-        name="Data Structures & Algorithms",
-        category="Foundational",
-        domain="Core CS",
-        required_level=ProficiencyLevel.ADVANCED,
-        importance_weight=1.5,
-        prerequisites=[],
-        learning_time_hours=200,
+    "javascript": SkillInfo(
+        name="JavaScript", category="Programming Language", learning_hours=80,
         resources=[
-            {"name": "LeetCode", "url": "https://leetcode.com", "type": "practice"},
-            {"name": "GeeksforGeeks DSA", "url": "https://geeksforgeeks.org", "type": "tutorial"},
-            {"name": "MIT OpenCourseWare", "url": "https://ocw.mit.edu", "type": "course"},
+            {"name": "W3Schools JavaScript",  "url": "https://www.w3schools.com/js/",                        "type": "tutorial"},
+            {"name": "GeeksforGeeks JS",      "url": "https://www.geeksforgeeks.org/javascript/",            "type": "tutorial"},
+            {"name": "JavaScript.info",       "url": "https://javascript.info/",                             "type": "tutorial"},
+            {"name": "freeCodeCamp JS",       "url": "https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/", "type": "course"},
+            {"name": "MDN JavaScript",        "url": "https://developer.mozilla.org/en-US/docs/Learn/JavaScript", "type": "docs"},
         ]
     ),
-    "system design": Skill(
-        name="System Design",
-        category="Foundational",
-        domain="Architecture",
-        required_level=ProficiencyLevel.ADVANCED,
-        importance_weight=1.3,
-        prerequisites=["dsa", "database design"],
-        learning_time_hours=150,
+    "typescript": SkillInfo(
+        name="TypeScript", category="Programming Language", learning_hours=60,
         resources=[
-            {"name": "System Design Primer", "url": "https://github.com/donnemartin/system-design-primer", "type": "guide"},
+            {"name": "TypeScript Official Docs","url": "https://www.typescriptlang.org/docs/",               "type": "docs"},
+            {"name": "W3Schools TypeScript",  "url": "https://www.w3schools.com/typescript/",                "type": "tutorial"},
+            {"name": "GeeksforGeeks TypeScript","url": "https://www.geeksforgeeks.org/typescript/",          "type": "tutorial"},
+            {"name": "TypeScript on YouTube", "url": "https://www.youtube.com/watch?v=BwuLxPH8IDs",          "type": "video"},
+        ]
+    ),
+    "kotlin": SkillInfo(
+        name="Kotlin", category="Programming Language", learning_hours=80,
+        resources=[
+            {"name": "Kotlin Official Docs",  "url": "https://kotlinlang.org/docs/home.html",                "type": "docs"},
+            {"name": "GeeksforGeeks Kotlin",  "url": "https://www.geeksforgeeks.org/kotlin-programming-language/", "type": "tutorial"},
+            {"name": "Kotlin on YouTube",     "url": "https://www.youtube.com/watch?v=F9UC9DY-vIU",          "type": "video"},
+        ]
+    ),
+    "golang": SkillInfo(
+        name="Go (Golang)", category="Programming Language", learning_hours=80,
+        resources=[
+            {"name": "Go Official Tour",      "url": "https://tour.golang.org/",                             "type": "tutorial"},
+            {"name": "GeeksforGeeks Go",      "url": "https://www.geeksforgeeks.org/golang/",                "type": "tutorial"},
+            {"name": "Go on YouTube",         "url": "https://www.youtube.com/watch?v=yyUHQIec83I",          "type": "video"},
         ]
     ),
 
-    # === Web Frontend ===
-    "html": Skill(
-        name="HTML",
-        category="Frontend",
-        domain="Web",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.0,
-        prerequisites=[],
-        learning_time_hours=40,
+    # ── Web Frontend ───────────────────────────────────────
+    "html": SkillInfo(
+        name="HTML", category="Frontend", learning_hours=30,
         resources=[
-            {"name": "MDN HTML", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML", "type": "documentation"},
+            {"name": "W3Schools HTML",        "url": "https://www.w3schools.com/html/",                      "type": "tutorial"},
+            {"name": "GeeksforGeeks HTML",    "url": "https://www.geeksforgeeks.org/html-tutorial/",         "type": "tutorial"},
+            {"name": "MDN HTML",              "url": "https://developer.mozilla.org/en-US/docs/Learn/HTML",  "type": "docs"},
+            {"name": "freeCodeCamp HTML",     "url": "https://www.freecodecamp.org/learn/responsive-web-design/", "type": "course"},
         ]
     ),
-    "css": Skill(
-        name="CSS",
-        category="Frontend",
-        domain="Web",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.0,
-        prerequisites=["html"],
-        learning_time_hours=60,
+    "css": SkillInfo(
+        name="CSS", category="Frontend", learning_hours=40,
         resources=[
-            {"name": "MDN CSS", "url": "https://developer.mozilla.org/en-US/docs/Web/CSS", "type": "documentation"},
-            {"name": "CSS Tricks", "url": "https://css-tricks.com", "type": "guide"},
+            {"name": "W3Schools CSS",         "url": "https://www.w3schools.com/css/",                       "type": "tutorial"},
+            {"name": "GeeksforGeeks CSS",     "url": "https://www.geeksforgeeks.org/css-tutorial/",          "type": "tutorial"},
+            {"name": "MDN CSS",               "url": "https://developer.mozilla.org/en-US/docs/Learn/CSS",   "type": "docs"},
+            {"name": "CSS Tricks",            "url": "https://css-tricks.com/",                              "type": "tutorial"},
         ]
     ),
-    "react": Skill(
-        name="React",
-        category="Frontend",
-        domain="Frontend Framework",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.3,
-        prerequisites=["javascript", "html", "css"],
-        learning_time_hours=80,
+    "react": SkillInfo(
+        name="React", category="Frontend Framework", learning_hours=70,
         resources=[
-            {"name": "React Official Docs", "url": "https://react.dev", "type": "documentation"},
-            {"name": "React Tutorial", "url": "https://react.dev/learn", "type": "tutorial"},
+            {"name": "React Official Docs",   "url": "https://react.dev/learn",                              "type": "docs"},
+            {"name": "W3Schools React",       "url": "https://www.w3schools.com/react/",                     "type": "tutorial"},
+            {"name": "GeeksforGeeks React",   "url": "https://www.geeksforgeeks.org/reactjs/",               "type": "tutorial"},
+            {"name": "freeCodeCamp React",    "url": "https://www.freecodecamp.org/learn/front-end-development-libraries/", "type": "course"},
+            {"name": "React on YouTube",      "url": "https://www.youtube.com/watch?v=bMknfKXIFA8",          "type": "video"},
         ]
     ),
-    "vue.js": Skill(
-        name="Vue.js",
-        category="Frontend",
-        domain="Frontend Framework",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.1,
-        prerequisites=["javascript", "html", "css"],
-        learning_time_hours=70,
+    "angular": SkillInfo(
+        name="Angular", category="Frontend Framework", learning_hours=80,
         resources=[
-            {"name": "Vue Official Docs", "url": "https://vuejs.org", "type": "documentation"},
+            {"name": "Angular Official Docs", "url": "https://angular.io/tutorial",                          "type": "docs"},
+            {"name": "W3Schools Angular",     "url": "https://www.w3schools.com/angular/",                   "type": "tutorial"},
+            {"name": "GeeksforGeeks Angular", "url": "https://www.geeksforgeeks.org/angularjs-tutorials/",   "type": "tutorial"},
+            {"name": "Angular on YouTube",    "url": "https://www.youtube.com/watch?v=3qBXWUpoPHo",          "type": "video"},
         ]
     ),
-    "responsive design": Skill(
-        name="Responsive Design",
-        category="Frontend",
-        domain="UI/UX",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.1,
-        prerequisites=["html", "css"],
-        learning_time_hours=50,
+    "vue.js": SkillInfo(
+        name="Vue.js", category="Frontend Framework", learning_hours=60,
         resources=[
-            {"name": "MDN Responsive Design", "url": "https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Responsive_Design", "type": "guide"},
+            {"name": "Vue Official Docs",     "url": "https://vuejs.org/guide/introduction.html",            "type": "docs"},
+            {"name": "W3Schools Vue",         "url": "https://www.w3schools.com/vue/",                       "type": "tutorial"},
+            {"name": "Vue on YouTube",        "url": "https://www.youtube.com/watch?v=FXpIoQ_rT_c",          "type": "video"},
         ]
     ),
-
-    # === Backend & Databases ===
-    "node.js": Skill(
-        name="Node.js",
-        category="Backend Runtime",
-        domain="Full-stack",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.2,
-        prerequisites=["javascript"],
-        learning_time_hours=80,
+    "bootstrap": SkillInfo(
+        name="Bootstrap", category="Frontend", learning_hours=25,
         resources=[
-            {"name": "Node.js Official Docs", "url": "https://nodejs.org/docs", "type": "documentation"},
+            {"name": "W3Schools Bootstrap",   "url": "https://www.w3schools.com/bootstrap5/",                "type": "tutorial"},
+            {"name": "Bootstrap Official Docs","url": "https://getbootstrap.com/docs/",                      "type": "docs"},
+            {"name": "GeeksforGeeks Bootstrap","url": "https://www.geeksforgeeks.org/bootstrap/",            "type": "tutorial"},
         ]
     ),
-    "express": Skill(
-        name="Express.js",
-        category="Backend Framework",
-        domain="Full-stack",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.2,
-        prerequisites=["node.js"],
-        learning_time_hours=60,
+    "responsive design": SkillInfo(
+        name="Responsive Design", category="Frontend", learning_hours=30,
         resources=[
-            {"name": "Express Official Docs", "url": "https://expressjs.com", "type": "documentation"},
-        ]
-    ),
-    "fastapi": Skill(
-        name="FastAPI",
-        category="Backend Framework",
-        domain="Backend",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.2,
-        prerequisites=["python"],
-        learning_time_hours=70,
-        resources=[
-            {"name": "FastAPI Docs", "url": "https://fastapi.tiangolo.com", "type": "documentation"},
-        ]
-    ),
-    "sql": Skill(
-        name="SQL",
-        category="Database",
-        domain="Data Persistence",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.3,
-        prerequisites=[],
-        learning_time_hours=80,
-        resources=[
-            {"name": "SQL Tutorial", "url": "https://www.w3schools.com/sql", "type": "tutorial"},
-            {"name": "LeetCode SQL", "url": "https://leetcode.com", "type": "practice"},
-        ]
-    ),
-    "mongodb": Skill(
-        name="MongoDB",
-        category="Database",
-        domain="NoSQL",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.0,
-        prerequisites=["json"],
-        learning_time_hours=60,
-        resources=[
-            {"name": "MongoDB University", "url": "https://university.mongodb.com", "type": "course"},
-        ]
-    ),
-    "database design": Skill(
-        name="Database Design",
-        category="Database",
-        domain="Data Architecture",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.2,
-        prerequisites=["sql"],
-        learning_time_hours=100,
-        resources=[
-            {"name": "Database Design Tutorial", "url": "https://www.guru99.com/database-design.html", "type": "guide"},
+            {"name": "W3Schools Responsive",  "url": "https://www.w3schools.com/css/css_rwd_intro.asp",      "type": "tutorial"},
+            {"name": "MDN Responsive Design", "url": "https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Responsive_Design", "type": "docs"},
+            {"name": "freeCodeCamp Responsive","url": "https://www.freecodecamp.org/learn/responsive-web-design/", "type": "course"},
         ]
     ),
 
-    # === Data & ML ===
-    "python data": Skill(
-        name="Python for Data",
-        category="Data Science",
-        domain="Data",
-        required_level=ProficiencyLevel.ADVANCED,
-        importance_weight=1.3,
-        prerequisites=["python"],
-        learning_time_hours=100,
+    # ── Backend ────────────────────────────────────────────
+    "node.js": SkillInfo(
+        name="Node.js", category="Backend", learning_hours=60,
         resources=[
-            {"name": "Real Python Data Science", "url": "https://realpython.com/learning-paths/data-science/", "type": "guide"},
+            {"name": "W3Schools Node.js",     "url": "https://www.w3schools.com/nodejs/",                    "type": "tutorial"},
+            {"name": "GeeksforGeeks Node.js", "url": "https://www.geeksforgeeks.org/nodejs/",                "type": "tutorial"},
+            {"name": "Node.js Official Docs", "url": "https://nodejs.org/en/docs/",                          "type": "docs"},
+            {"name": "Node.js on YouTube",    "url": "https://www.youtube.com/watch?v=TlB_eWDSMt4",          "type": "video"},
         ]
     ),
-    "pandas": Skill(
-        name="Pandas",
-        category="Data Science Library",
-        domain="Data Processing",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.2,
-        prerequisites=["python"],
-        learning_time_hours=60,
+    "express": SkillInfo(
+        name="Express.js", category="Backend", learning_hours=40,
         resources=[
-            {"name": "Pandas Official Docs", "url": "https://pandas.pydata.org/docs", "type": "documentation"},
+            {"name": "Express Official Docs", "url": "https://expressjs.com/en/starter/installing.html",     "type": "docs"},
+            {"name": "W3Schools Express",     "url": "https://www.w3schools.com/nodejs/nodejs_express.asp",  "type": "tutorial"},
+            {"name": "GeeksforGeeks Express", "url": "https://www.geeksforgeeks.org/express-js/",            "type": "tutorial"},
+            {"name": "Express on YouTube",    "url": "https://www.youtube.com/watch?v=SccSCuHhOw0",          "type": "video"},
         ]
     ),
-    "numpy": Skill(
-        name="NumPy",
-        category="Data Science Library",
-        domain="Numerical Computing",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.1,
-        prerequisites=["python"],
-        learning_time_hours=50,
+    "django": SkillInfo(
+        name="Django", category="Backend", learning_hours=70,
         resources=[
-            {"name": "NumPy Official Docs", "url": "https://numpy.org/doc", "type": "documentation"},
+            {"name": "Django Official Docs",  "url": "https://docs.djangoproject.com/en/stable/intro/tutorial01/", "type": "docs"},
+            {"name": "GeeksforGeeks Django",  "url": "https://www.geeksforgeeks.org/django-tutorial/",       "type": "tutorial"},
+            {"name": "W3Schools Django",      "url": "https://www.w3schools.com/django/",                    "type": "tutorial"},
+            {"name": "Django on YouTube",     "url": "https://www.youtube.com/watch?v=PtQiiknWUcI",          "type": "video"},
         ]
     ),
-    "matplotlib": Skill(
-        name="Matplotlib",
-        category="Data Visualization",
-        domain="Visualization",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=0.9,
-        prerequisites=["python", "numpy"],
-        learning_time_hours=40,
+    "fastapi": SkillInfo(
+        name="FastAPI", category="Backend", learning_hours=50,
         resources=[
-            {"name": "Matplotlib Tutorial", "url": "https://matplotlib.org/stable/tutorials/index", "type": "tutorial"},
+            {"name": "FastAPI Official Docs", "url": "https://fastapi.tiangolo.com/tutorial/",               "type": "docs"},
+            {"name": "GeeksforGeeks FastAPI", "url": "https://www.geeksforgeeks.org/fastapi/",               "type": "tutorial"},
+            {"name": "FastAPI on YouTube",    "url": "https://www.youtube.com/watch?v=7t2alSnE2-I",          "type": "video"},
         ]
     ),
-    "scikit-learn": Skill(
-        name="Scikit-learn",
-        category="ML Library",
-        domain="Machine Learning",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.2,
-        prerequisites=["python", "numpy", "pandas", "statistics"],
-        learning_time_hours=100,
+    "flask": SkillInfo(
+        name="Flask", category="Backend", learning_hours=50,
         resources=[
-            {"name": "Scikit-learn Docs", "url": "https://scikit-learn.org/stable", "type": "documentation"},
+            {"name": "Flask Official Docs",   "url": "https://flask.palletsprojects.com/en/latest/tutorial/","type": "docs"},
+            {"name": "GeeksforGeeks Flask",   "url": "https://www.geeksforgeeks.org/flask-tutorial/",        "type": "tutorial"},
+            {"name": "W3Schools Flask",       "url": "https://www.w3schools.com/python/python_flask.asp",    "type": "tutorial"},
+            {"name": "Flask on YouTube",      "url": "https://www.youtube.com/watch?v=Z1RJmh_OqeA",          "type": "video"},
         ]
     ),
-    "machine learning": Skill(
-        name="Machine Learning",
-        category="ML Concepts",
-        domain="Machine Learning",
-        required_level=ProficiencyLevel.ADVANCED,
-        importance_weight=1.4,
-        prerequisites=["python", "statistics", "linear algebra"],
-        learning_time_hours=150,
+    "spring boot": SkillInfo(
+        name="Spring Boot", category="Backend", learning_hours=90,
         resources=[
-            {"name": "Andrew Ng ML Course", "url": "https://www.coursera.org/learn/machine-learning", "type": "course"},
-            {"name": "ML Textbook", "url": "https://github.com/fastai", "type": "guide"},
+            {"name": "Spring Official Docs",  "url": "https://spring.io/guides",                             "type": "docs"},
+            {"name": "GeeksforGeeks Spring",  "url": "https://www.geeksforgeeks.org/spring-boot/",           "type": "tutorial"},
+            {"name": "Spring Boot YouTube",   "url": "https://www.youtube.com/watch?v=9SGDpanrc8U",          "type": "video"},
         ]
     ),
-    "statistics": Skill(
-        name="Statistics",
-        category="Mathematics",
-        domain="Data Science Foundation",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.2,
-        prerequisites=[],
-        learning_time_hours=120,
+    "rest api": SkillInfo(
+        name="REST API", category="Backend", learning_hours=40,
         resources=[
-            {"name": "Khan Academy Statistics", "url": "https://www.khanacademy.org/math/statistics-probability", "type": "course"},
-        ]
-    ),
-    "linear algebra": Skill(
-        name="Linear Algebra",
-        category="Mathematics",
-        domain="ML Foundation",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.2,
-        prerequisites=[],
-        learning_time_hours=100,
-        resources=[
-            {"name": "Khan Academy Linear Algebra", "url": "https://www.khanacademy.org/math/linear-algebra", "type": "course"},
+            {"name": "GeeksforGeeks REST",    "url": "https://www.geeksforgeeks.org/rest-api-introduction/", "type": "tutorial"},
+            {"name": "RESTful API Guide",     "url": "https://restfulapi.net/",                              "type": "tutorial"},
+            {"name": "MDN HTTP",              "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP",    "type": "docs"},
+            {"name": "REST API YouTube",      "url": "https://www.youtube.com/watch?v=lsMQRaeKNDk",          "type": "video"},
         ]
     ),
 
-    # === DevOps & Tools ===
-    "git": Skill(
-        name="Git & GitHub",
-        category="Version Control",
-        domain="DevOps",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.1,
-        prerequisites=[],
-        learning_time_hours=30,
+    # ── Databases ──────────────────────────────────────────
+    "sql": SkillInfo(
+        name="SQL", category="Database", learning_hours=60,
         resources=[
-            {"name": "Git Official Docs", "url": "https://git-scm.com/doc", "type": "documentation"},
-            {"name": "GitHub Learning", "url": "https://github.skills.github.com", "type": "course"},
+            {"name": "W3Schools SQL",         "url": "https://www.w3schools.com/sql/",                       "type": "tutorial"},
+            {"name": "GeeksforGeeks SQL",     "url": "https://www.geeksforgeeks.org/sql-tutorial/",          "type": "tutorial"},
+            {"name": "SQLZoo Practice",       "url": "https://sqlzoo.net/",                                  "type": "practice"},
+            {"name": "Mode SQL Tutorial",     "url": "https://mode.com/sql-tutorial/",                       "type": "tutorial"},
+            {"name": "SQL on YouTube",        "url": "https://www.youtube.com/watch?v=HXV3zeQKqGY",          "type": "video"},
         ]
     ),
-    "docker": Skill(
-        name="Docker",
-        category="Containerization",
-        domain="DevOps",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.1,
-        prerequisites=["git"],
-        learning_time_hours=70,
+    "mysql": SkillInfo(
+        name="MySQL", category="Database", learning_hours=50,
         resources=[
-            {"name": "Docker Official Docs", "url": "https://docs.docker.com", "type": "documentation"},
+            {"name": "W3Schools MySQL",       "url": "https://www.w3schools.com/mysql/",                     "type": "tutorial"},
+            {"name": "GeeksforGeeks MySQL",   "url": "https://www.geeksforgeeks.org/mysql-tutorial/",        "type": "tutorial"},
+            {"name": "MySQL Official Docs",   "url": "https://dev.mysql.com/doc/refman/8.0/en/tutorial.html","type": "docs"},
         ]
     ),
-    "kubernetes": Skill(
-        name="Kubernetes",
-        category="Orchestration",
-        domain="DevOps",
-        required_level=ProficiencyLevel.ADVANCED,
-        importance_weight=1.0,
-        prerequisites=["docker"],
-        learning_time_hours=120,
+    "mongodb": SkillInfo(
+        name="MongoDB", category="Database", learning_hours=50,
         resources=[
-            {"name": "Kubernetes Official Docs", "url": "https://kubernetes.io/docs", "type": "documentation"},
+            {"name": "MongoDB Official Docs", "url": "https://www.mongodb.com/docs/manual/tutorial/",        "type": "docs"},
+            {"name": "W3Schools MongoDB",     "url": "https://www.w3schools.com/mongodb/",                   "type": "tutorial"},
+            {"name": "GeeksforGeeks MongoDB", "url": "https://www.geeksforgeeks.org/mongodb-tutorial/",      "type": "tutorial"},
+            {"name": "MongoDB University",    "url": "https://university.mongodb.com/",                      "type": "course"},
+            {"name": "MongoDB YouTube",       "url": "https://www.youtube.com/watch?v=ofme2o29ngU",          "type": "video"},
         ]
     ),
-    "rest api": Skill(
-        name="REST API Design",
-        category="Architecture",
-        domain="Backend",
-        required_level=ProficiencyLevel.INTERMEDIATE,
-        importance_weight=1.2,
-        prerequisites=["http basics"],
-        learning_time_hours=50,
+    "postgresql": SkillInfo(
+        name="PostgreSQL", category="Database", learning_hours=60,
         resources=[
-            {"name": "REST API Best Practices", "url": "https://restfulapi.net", "type": "guide"},
+            {"name": "PostgreSQL Official",   "url": "https://www.postgresql.org/docs/current/tutorial.html","type": "docs"},
+            {"name": "W3Schools PostgreSQL",  "url": "https://www.w3schools.com/postgresql/",                "type": "tutorial"},
+            {"name": "GeeksforGeeks PostgreSQL","url": "https://www.geeksforgeeks.org/postgresql-tutorial/", "type": "tutorial"},
         ]
     ),
-    "http basics": Skill(
-        name="HTTP & Networking",
-        category="Networking",
-        domain="Foundation",
-        required_level=ProficiencyLevel.BEGINNER,
-        importance_weight=1.0,
-        prerequisites=[],
-        learning_time_hours=30,
+    "database design": SkillInfo(
+        name="Database Design", category="Database", learning_hours=60,
         resources=[
-            {"name": "MDN HTTP", "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP", "type": "documentation"},
+            {"name": "GeeksforGeeks DB Design","url": "https://www.geeksforgeeks.org/database-management-system/", "type": "tutorial"},
+            {"name": "W3Schools DB",          "url": "https://www.w3schools.com/sql/sql_create_db.asp",      "type": "tutorial"},
+            {"name": "DB Design YouTube",     "url": "https://www.youtube.com/watch?v=ztHopE5Wnpc",          "type": "video"},
         ]
     ),
 
-    # === Data Formats & Other ===
-    "json": Skill(
-        name="JSON",
-        category="Data Format",
-        domain="Foundation",
-        required_level=ProficiencyLevel.BEGINNER,
-        importance_weight=0.8,
-        prerequisites=[],
-        learning_time_hours=10,
+    # ── DSA & CS Fundamentals ──────────────────────────────
+    "dsa": SkillInfo(
+        name="Data Structures & Algorithms", category="CS Fundamentals", learning_hours=150,
         resources=[
-            {"name": "JSON.org", "url": "https://www.json.org", "type": "documentation"},
+            {"name": "GeeksforGeeks DSA",     "url": "https://www.geeksforgeeks.org/data-structures/",       "type": "tutorial"},
+            {"name": "W3Schools DSA",         "url": "https://www.w3schools.com/dsa/",                       "type": "tutorial"},
+            {"name": "LeetCode Practice",     "url": "https://leetcode.com/",                                "type": "practice"},
+            {"name": "freeCodeCamp Algorithms","url": "https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/", "type": "course"},
+            {"name": "DSA on YouTube",        "url": "https://www.youtube.com/watch?v=8hly31xKli0",          "type": "video"},
+        ]
+    ),
+    "data structures": SkillInfo(
+        name="Data Structures", category="CS Fundamentals", learning_hours=100,
+        resources=[
+            {"name": "GeeksforGeeks DS",      "url": "https://www.geeksforgeeks.org/data-structures/",       "type": "tutorial"},
+            {"name": "W3Schools DSA",         "url": "https://www.w3schools.com/dsa/",                       "type": "tutorial"},
+            {"name": "Visualgo (Visualize DS)","url": "https://visualgo.net/",                               "type": "tutorial"},
+            {"name": "DS YouTube",            "url": "https://www.youtube.com/watch?v=RBSGKlAvoiM",          "type": "video"},
+        ]
+    ),
+    "algorithms": SkillInfo(
+        name="Algorithms", category="CS Fundamentals", learning_hours=100,
+        resources=[
+            {"name": "GeeksforGeeks Algorithms","url": "https://www.geeksforgeeks.org/fundamentals-of-algorithms/", "type": "tutorial"},
+            {"name": "LeetCode Practice",     "url": "https://leetcode.com/",                                "type": "practice"},
+            {"name": "HackerRank",            "url": "https://www.hackerrank.com/domains/algorithms",        "type": "practice"},
+            {"name": "Algorithms YouTube",    "url": "https://www.youtube.com/watch?v=0IAPZzGSbME",          "type": "video"},
+        ]
+    ),
+    "oops": SkillInfo(
+        name="Object-Oriented Programming", category="CS Fundamentals", learning_hours=60,
+        resources=[
+            {"name": "GeeksforGeeks OOP",     "url": "https://www.geeksforgeeks.org/object-oriented-programming-oops-concept-in-java/", "type": "tutorial"},
+            {"name": "W3Schools OOP (Python)","url": "https://www.w3schools.com/python/python_classes.asp",  "type": "tutorial"},
+            {"name": "OOP YouTube",           "url": "https://www.youtube.com/watch?v=SiBw7os-_zI",          "type": "video"},
+        ]
+    ),
+    "system design": SkillInfo(
+        name="System Design", category="CS Fundamentals", learning_hours=120,
+        resources=[
+            {"name": "System Design Primer",  "url": "https://github.com/donnemartin/system-design-primer", "type": "tutorial"},
+            {"name": "GeeksforGeeks System Design","url": "https://www.geeksforgeeks.org/system-design-tutorial/", "type": "tutorial"},
+            {"name": "System Design YouTube", "url": "https://www.youtube.com/watch?v=xpDnVSmNFX0",          "type": "video"},
+        ]
+    ),
+    "operating systems": SkillInfo(
+        name="Operating Systems", category="CS Fundamentals", learning_hours=80,
+        resources=[
+            {"name": "GeeksforGeeks OS",      "url": "https://www.geeksforgeeks.org/operating-systems/",     "type": "tutorial"},
+            {"name": "OS YouTube",            "url": "https://www.youtube.com/watch?v=vBURTt97EkA",          "type": "video"},
+        ]
+    ),
+    "computer networks": SkillInfo(
+        name="Computer Networks", category="CS Fundamentals", learning_hours=70,
+        resources=[
+            {"name": "GeeksforGeeks Networks","url": "https://www.geeksforgeeks.org/computer-network-tutorials/", "type": "tutorial"},
+            {"name": "W3Schools Networking",  "url": "https://www.w3schools.com/whatis/whatis_protocol.asp", "type": "tutorial"},
+            {"name": "Networks YouTube",      "url": "https://www.youtube.com/watch?v=qiQR5rTSshw",          "type": "video"},
+        ]
+    ),
+    "computer networking": SkillInfo(
+        name="Computer Networking", category="Networking", learning_hours=70,
+        resources=[
+            {"name": "GeeksforGeeks Networks","url": "https://www.geeksforgeeks.org/computer-network-tutorials/", "type": "tutorial"},
+            {"name": "Cisco Networking Basics","url": "https://www.netacad.com/courses/networking/networking-basics", "type": "course"},
+            {"name": "Networks YouTube",      "url": "https://www.youtube.com/watch?v=qiQR5rTSshw",          "type": "video"},
+        ]
+    ),
+    "tcp/ip": SkillInfo(
+        name="TCP/IP", category="Networking", learning_hours=30,
+        resources=[
+            {"name": "GeeksforGeeks TCP/IP",  "url": "https://www.geeksforgeeks.org/tcp-ip-model/",          "type": "tutorial"},
+            {"name": "W3Schools TCP/IP",      "url": "https://www.w3schools.com/whatis/whatis_tcpip.asp",    "type": "tutorial"},
+            {"name": "TCP/IP YouTube",        "url": "https://www.youtube.com/watch?v=2QGgEk20RXg",          "type": "video"},
+        ]
+    ),
+    "lan/wan": SkillInfo(
+        name="LAN/WAN", category="Networking", learning_hours=30,
+        resources=[
+            {"name": "GeeksforGeeks LAN/WAN", "url": "https://www.geeksforgeeks.org/difference-between-lan-and-wan/", "type": "tutorial"},
+            {"name": "W3Schools LAN",         "url": "https://www.w3schools.com/whatis/whatis_lan.asp",      "type": "tutorial"},
+            {"name": "LAN/WAN YouTube",       "url": "https://www.youtube.com/watch?v=R0kCBmrAnhk",          "type": "video"},
+        ]
+    ),
+    "network security": SkillInfo(
+        name="Network Security", category="Networking", learning_hours=80,
+        resources=[
+            {"name": "GeeksforGeeks Network Security","url": "https://www.geeksforgeeks.org/network-security/", "type": "tutorial"},
+            {"name": "Cybersecurity on Coursera","url": "https://www.coursera.org/learn/ibm-cybersecurity-analyst", "type": "course"},
+            {"name": "Network Security YouTube","url": "https://www.youtube.com/watch?v=inWWhr5tnEA",         "type": "video"},
+        ]
+    ),
+    "routing & switching": SkillInfo(
+        name="Routing & Switching", category="Networking", learning_hours=60,
+        resources=[
+            {"name": "GeeksforGeeks Routing", "url": "https://www.geeksforgeeks.org/types-of-routing/",      "type": "tutorial"},
+            {"name": "Cisco NetAcad",         "url": "https://www.netacad.com/",                             "type": "course"},
+            {"name": "Routing YouTube",       "url": "https://www.youtube.com/watch?v=AzXys5kxpAM",          "type": "video"},
+        ]
+    ),
+    "dns": SkillInfo(
+        name="DNS", category="Networking", learning_hours=20,
+        resources=[
+            {"name": "GeeksforGeeks DNS",     "url": "https://www.geeksforgeeks.org/domain-name-system-dns-in-application-layer/", "type": "tutorial"},
+            {"name": "W3Schools DNS",         "url": "https://www.w3schools.com/whatis/whatis_dns.asp",      "type": "tutorial"},
+            {"name": "DNS YouTube",           "url": "https://www.youtube.com/watch?v=mpQZVYPuDGU",          "type": "video"},
+        ]
+    ),
+    "dhcp": SkillInfo(
+        name="DHCP", category="Networking", learning_hours=20,
+        resources=[
+            {"name": "GeeksforGeeks DHCP",    "url": "https://www.geeksforgeeks.org/dynamic-host-configuration-protocol-dhcp/", "type": "tutorial"},
+            {"name": "DHCP YouTube",          "url": "https://www.youtube.com/watch?v=S43CFcpOZSI",          "type": "video"},
+        ]
+    ),
+
+    # ── Data Science & ML ──────────────────────────────────
+    "machine learning": SkillInfo(
+        name="Machine Learning", category="Data Science", learning_hours=120,
+        resources=[
+            {"name": "GeeksforGeeks ML",      "url": "https://www.geeksforgeeks.org/machine-learning/",      "type": "tutorial"},
+            {"name": "Kaggle Learn ML",       "url": "https://www.kaggle.com/learn/intro-to-machine-learning","type": "course"},
+            {"name": "ML on YouTube (Sentdex)","url": "https://www.youtube.com/watch?v=OGxgnH8y2NM",         "type": "video"},
+            {"name": "Google ML Crash Course","url": "https://developers.google.com/machine-learning/crash-course", "type": "course"},
+        ]
+    ),
+    "deep learning": SkillInfo(
+        name="Deep Learning", category="Data Science", learning_hours=150,
+        resources=[
+            {"name": "GeeksforGeeks Deep Learning","url": "https://www.geeksforgeeks.org/deep-learning-tutorial/", "type": "tutorial"},
+            {"name": "DeepLearning.AI",       "url": "https://www.deeplearning.ai/",                         "type": "course"},
+            {"name": "Deep Learning YouTube", "url": "https://www.youtube.com/watch?v=aircAruvnKk",           "type": "video"},
+        ]
+    ),
+    "pandas": SkillInfo(
+        name="Pandas", category="Data Science", learning_hours=50,
+        resources=[
+            {"name": "Pandas Official Docs",  "url": "https://pandas.pydata.org/docs/getting_started/",      "type": "docs"},
+            {"name": "GeeksforGeeks Pandas",  "url": "https://www.geeksforgeeks.org/pandas-tutorial/",       "type": "tutorial"},
+            {"name": "W3Schools Pandas",      "url": "https://www.w3schools.com/python/pandas/",             "type": "tutorial"},
+            {"name": "Kaggle Pandas",         "url": "https://www.kaggle.com/learn/pandas",                  "type": "course"},
+        ]
+    ),
+    "numpy": SkillInfo(
+        name="NumPy", category="Data Science", learning_hours=40,
+        resources=[
+            {"name": "NumPy Official Docs",   "url": "https://numpy.org/doc/stable/user/quickstart.html",    "type": "docs"},
+            {"name": "GeeksforGeeks NumPy",   "url": "https://www.geeksforgeeks.org/numpy-tutorial/",        "type": "tutorial"},
+            {"name": "W3Schools NumPy",       "url": "https://www.w3schools.com/python/numpy/",              "type": "tutorial"},
+        ]
+    ),
+    "scikit-learn": SkillInfo(
+        name="Scikit-learn", category="Data Science", learning_hours=60,
+        resources=[
+            {"name": "Scikit-learn Docs",     "url": "https://scikit-learn.org/stable/getting_started.html", "type": "docs"},
+            {"name": "GeeksforGeeks Sklearn", "url": "https://www.geeksforgeeks.org/learning-model-building-scikit-learn-python-machine-learning-library/", "type": "tutorial"},
+            {"name": "Kaggle ML",             "url": "https://www.kaggle.com/learn/intro-to-machine-learning","type": "course"},
+        ]
+    ),
+    "tensorflow": SkillInfo(
+        name="TensorFlow", category="Data Science", learning_hours=80,
+        resources=[
+            {"name": "TensorFlow Tutorials",  "url": "https://www.tensorflow.org/tutorials",                 "type": "docs"},
+            {"name": "GeeksforGeeks TF",      "url": "https://www.geeksforgeeks.org/introduction-to-tensorflow/", "type": "tutorial"},
+            {"name": "TensorFlow YouTube",    "url": "https://www.youtube.com/watch?v=tPYj3fFJGjk",          "type": "video"},
+        ]
+    ),
+    "statistics": SkillInfo(
+        name="Statistics", category="Mathematics", learning_hours=80,
+        resources=[
+            {"name": "Khan Academy Statistics","url": "https://www.khanacademy.org/math/statistics-probability", "type": "course"},
+            {"name": "GeeksforGeeks Statistics","url": "https://www.geeksforgeeks.org/statistics/",          "type": "tutorial"},
+            {"name": "W3Schools Statistics",  "url": "https://www.w3schools.com/statistics/",                "type": "tutorial"},
+        ]
+    ),
+    "data visualization": SkillInfo(
+        name="Data Visualization", category="Data Science", learning_hours=50,
+        resources=[
+            {"name": "GeeksforGeeks Data Viz","url": "https://www.geeksforgeeks.org/data-visualization-using-matplotlib/", "type": "tutorial"},
+            {"name": "Kaggle Data Viz",       "url": "https://www.kaggle.com/learn/data-visualization",      "type": "course"},
+            {"name": "Matplotlib Tutorials",  "url": "https://matplotlib.org/stable/tutorials/index.html",   "type": "docs"},
+        ]
+    ),
+    "power bi": SkillInfo(
+        name="Power BI", category="Data Analytics", learning_hours=60,
+        resources=[
+            {"name": "Microsoft Power BI Docs","url": "https://learn.microsoft.com/en-us/power-bi/fundamentals/power-bi-overview", "type": "docs"},
+            {"name": "GeeksforGeeks Power BI","url": "https://www.geeksforgeeks.org/power-bi/",              "type": "tutorial"},
+            {"name": "Power BI YouTube",      "url": "https://www.youtube.com/watch?v=fnA454XdCl0",          "type": "video"},
+        ]
+    ),
+    "excel": SkillInfo(
+        name="Excel", category="Data Analytics", learning_hours=40,
+        resources=[
+            {"name": "W3Schools Excel",       "url": "https://www.w3schools.com/excel/",                     "type": "tutorial"},
+            {"name": "GeeksforGeeks Excel",   "url": "https://www.geeksforgeeks.org/ms-excel-tutorial/",     "type": "tutorial"},
+            {"name": "Excel YouTube",         "url": "https://www.youtube.com/watch?v=rwbho0CgEAI",          "type": "video"},
+        ]
+    ),
+    "yolov8": SkillInfo(
+        name="YOLOv8", category="Computer Vision", learning_hours=60,
+        resources=[
+            {"name": "Ultralytics YOLOv8 Docs","url": "https://docs.ultralytics.com/",                      "type": "docs"},
+            {"name": "GeeksforGeeks YOLO",    "url": "https://www.geeksforgeeks.org/yolo-you-only-look-once-real-time-object-detection/", "type": "tutorial"},
+            {"name": "YOLOv8 YouTube",        "url": "https://www.youtube.com/watch?v=m9fH9OWn8YM",          "type": "video"},
+        ]
+    ),
+
+    # ── DevOps & Tools ─────────────────────────────────────
+    "git": SkillInfo(
+        name="Git & GitHub", category="DevOps", learning_hours=25,
+        resources=[
+            {"name": "W3Schools Git",         "url": "https://www.w3schools.com/git/",                       "type": "tutorial"},
+            {"name": "GeeksforGeeks Git",     "url": "https://www.geeksforgeeks.org/git-lets-get-into-it/",  "type": "tutorial"},
+            {"name": "GitHub Skills",         "url": "https://skills.github.com/",                           "type": "course"},
+            {"name": "Git on YouTube",        "url": "https://www.youtube.com/watch?v=RGOj5yH7evk",          "type": "video"},
+        ]
+    ),
+    "docker": SkillInfo(
+        name="Docker", category="DevOps", learning_hours=50,
+        resources=[
+            {"name": "Docker Official Docs",  "url": "https://docs.docker.com/get-started/",                 "type": "docs"},
+            {"name": "GeeksforGeeks Docker",  "url": "https://www.geeksforgeeks.org/docker-tutorial/",       "type": "tutorial"},
+            {"name": "Docker on YouTube",     "url": "https://www.youtube.com/watch?v=fqMOX6JJhGo",          "type": "video"},
+            {"name": "Play With Docker",      "url": "https://labs.play-with-docker.com/",                   "type": "practice"},
+        ]
+    ),
+    "kubernetes": SkillInfo(
+        name="Kubernetes", category="DevOps", learning_hours=80,
+        resources=[
+            {"name": "Kubernetes Official Docs","url": "https://kubernetes.io/docs/tutorials/",              "type": "docs"},
+            {"name": "GeeksforGeeks K8s",     "url": "https://www.geeksforgeeks.org/kubernetes-tutorial/",   "type": "tutorial"},
+            {"name": "Kubernetes YouTube",    "url": "https://www.youtube.com/watch?v=X48VuDVv0do",          "type": "video"},
+        ]
+    ),
+    "linux": SkillInfo(
+        name="Linux", category="DevOps", learning_hours=60,
+        resources=[
+            {"name": "GeeksforGeeks Linux",   "url": "https://www.geeksforgeeks.org/linux-tutorial/",        "type": "tutorial"},
+            {"name": "Linux Journey",         "url": "https://linuxjourney.com/",                            "type": "tutorial"},
+            {"name": "freeCodeCamp Linux",    "url": "https://www.freecodecamp.org/news/the-linux-commands-handbook/", "type": "tutorial"},
+            {"name": "Linux YouTube",         "url": "https://www.youtube.com/watch?v=sWbUDq4S6Y8",          "type": "video"},
+        ]
+    ),
+    "aws": SkillInfo(
+        name="AWS", category="Cloud", learning_hours=100,
+        resources=[
+            {"name": "AWS Official Docs",     "url": "https://aws.amazon.com/getting-started/",              "type": "docs"},
+            {"name": "GeeksforGeeks AWS",     "url": "https://www.geeksforgeeks.org/aws-tutorial/",          "type": "tutorial"},
+            {"name": "AWS on YouTube",        "url": "https://www.youtube.com/watch?v=k1RI5locZE4",          "type": "video"},
+            {"name": "AWS Free Tier",         "url": "https://aws.amazon.com/free/",                         "type": "practice"},
+        ]
+    ),
+    "azure": SkillInfo(
+        name="Azure", category="Cloud", learning_hours=100,
+        resources=[
+            {"name": "Microsoft Azure Docs",  "url": "https://learn.microsoft.com/en-us/azure/",             "type": "docs"},
+            {"name": "GeeksforGeeks Azure",   "url": "https://www.geeksforgeeks.org/microsoft-azure/",       "type": "tutorial"},
+            {"name": "Azure YouTube",         "url": "https://www.youtube.com/watch?v=NKEFWyqJ5XA",          "type": "video"},
         ]
     ),
 }
 
-# Role-specific skill requirements
-ROLE_SKILLS_DETAILED = {
-    "software engineer": {
-        "essential": ["python", "dsa", "system design", "database design"],
-        "frontend": ["javascript", "react", "html", "css"],
-        "backend": ["python", "sql", "rest api"],
-        "tools": ["git", "docker"],
-    },
-    "data scientist": {
-        "essential": ["python", "statistics", "machine learning"],
-        "data_processing": ["pandas", "numpy", "sql"],
-        "visualization": ["matplotlib"],
-        "ml_libraries": ["scikit-learn"],
-    },
-    "web developer": {
-        "essential": ["javascript", "html", "css"],
-        "frontend": ["react", "responsive design"],
-        "backend": ["node.js", "express", "sql"],
-        "tools": ["git"],
-    },
-    "frontend developer": {
-        "essential": ["javascript", "html", "css", "react"],
-        "ui_ux": ["responsive design"],
-        "tools": ["git"],
-    },
-    "backend developer": {
-        "essential": ["python", "sql", "rest api", "dsa"],
-        "frameworks": ["fastapi", "node.js"],
-        "databases": ["mongodb", "database design"],
-        "devops": ["git", "docker"],
-    },
-    "data analyst": {
-        "essential": ["sql", "statistics"],
-        "tools": ["pandas", "python"],
-        "visualization": ["matplotlib"],
-    },
-    "devops engineer": {
-        "essential": ["linux", "docker", "kubernetes"],
-        "scripting": ["python", "bash"],
-        "tools": ["git"],
-    },
+# ===========================================================
+# ROLE → REQUIRED SKILLS MAP
+# ===========================================================
+ROLE_SKILLS: Dict[str, List[str]] = {
+    "software engineer":     ["dsa", "python", "java", "sql", "git", "oops", "system design", "rest api"],
+    "data scientist":        ["python", "machine learning", "statistics", "pandas", "numpy", "scikit-learn", "sql", "data visualization"],
+    "web developer":         ["html", "css", "javascript", "react", "node.js", "sql", "git", "rest api"],
+    "frontend developer":    ["html", "css", "javascript", "react", "bootstrap", "responsive design", "git"],
+    "backend developer":     ["python", "django", "fastapi", "sql", "mongodb", "rest api", "git", "docker"],
+    "data analyst":          ["python", "sql", "excel", "power bi", "statistics", "pandas", "data visualization"],
+    "devops engineer":       ["linux", "docker", "kubernetes", "git", "aws", "python"],
+    "network engineer":      ["computer networking", "tcp/ip", "lan/wan", "routing & switching", "dns", "dhcp", "network security"],
+    "android developer":     ["java", "kotlin", "git", "rest api", "sql"],
+    "full stack developer":  ["html", "css", "javascript", "react", "node.js", "express", "sql", "mongodb", "git", "rest api"],
+    "ml engineer":           ["python", "machine learning", "deep learning", "tensorflow", "scikit-learn", "pandas", "numpy", "sql"],
 }
 
 
-def normalize_skill(skill: str) -> str:
-    """Normalize skill name to lowercase."""
-    return skill.strip().lower()
+# ===========================================================
+# TYPE ICONS & LABELS for UI
+# ===========================================================
+RESOURCE_META = {
+    "tutorial":  {"icon": "📖", "label": "Tutorial"},
+    "video":     {"icon": "▶️", "label": "Video"},
+    "practice":  {"icon": "💻", "label": "Practice"},
+    "course":    {"icon": "🎓", "label": "Course"},
+    "docs":      {"icon": "📄", "label": "Docs"},
+}
 
 
-def get_skill_info(skill_name: str) -> Skill:
-    """Get skill information from database."""
-    normalized = normalize_skill(skill_name)
-    return SKILL_DATABASE.get(normalized)
+def normalize(s: str) -> str:
+    return s.strip().lower()
 
 
-def build_learning_path(missing_skills: List[str], all_skills: Dict[str, Skill]) -> List[Dict]:
+def calculate_skill_gap(student_skills: List[str], target_role: str) -> dict:
     """
-    Build optimized learning path based on prerequisites and importance.
-    Uses topological sort to ensure prerequisites are learned first.
+    Core analysis function.
+    Returns matched/missing skills + resources for missing ones.
     """
-    path = []
-    visited = set()
-    temp_visited = set()
-
-    def visit(skill_name: str, path_order: List[Dict]):
-        if skill_name in visited:
-            return
-        if skill_name not in all_skills:
-            return
-
-        skill = all_skills[skill_name]
-
-        # Check for circular dependencies
-        if skill_name in temp_visited:
-            return
-
-        temp_visited.add(skill_name)
-
-        # Visit prerequisites first
-        for prereq in skill.prerequisites:
-            if prereq in missing_skills and prereq not in visited:
-                visit(prereq, path_order)
-
-        temp_visited.remove(skill_name)
-        visited.add(skill_name)
-
-        path_order.append({
-            "skill": skill.name,
-            "skill_key": skill_name,
-            "category": skill.category,
-            "domain": skill.domain,
-            "difficulty": skill.required_level.value,
-            "learning_hours": skill.learning_time_hours,
-            "resources": skill.resources,
-            "prerequisites": [SKILL_DATABASE[p].name for p in skill.prerequisites if p in SKILL_DATABASE],
-        })
-
-    # Build path
-    for skill in missing_skills:
-        visit(skill, path)
-
-    # Sort by priority: importance weight and learning time
-    path.sort(key=lambda x: (
-        -all_skills[x["skill_key"]].importance_weight,
-        all_skills[x["skill_key"]].required_level.value != "beginner"
-    ))
-
-    return path
-
-
-def calculate_skill_gap_advanced(
-    student_skills: List[str],
-    student_proficiency: Dict[str, str] = None,
-    target_role: str = None,
-) -> dict:
-    """
-    Advanced skill gap analysis with proficiency levels, learning paths, and detailed recommendations.
-
-    Args:
-        student_skills: List of skill names student has
-        student_proficiency: Dict mapping skill names to proficiency levels
-        target_role: Target job role
-
-    Returns:
-        Comprehensive gap analysis including learning path
-    """
+    role_key = normalize(target_role)
+    if role_key not in ROLE_SKILLS:
+        return {"error": f"Role '{target_role}' not found", "available_roles": list(ROLE_SKILLS.keys())}
 
     # Normalize student skills
-    student_skills_normalized = {normalize_skill(s): s for s in student_skills if s}
-    student_proficiency = student_proficiency or {}
+    student_set = {normalize(s) for s in student_skills if s}
 
-    # Get required skills for role
-    if not target_role:
-        return {"error": "Target role is required"}
+    required = ROLE_SKILLS[role_key]
+    required_set = set(required)
 
-    role_key = normalize_skill(target_role)
-    if role_key not in ROLE_SKILLS_DETAILED:
-        available = list(ROLE_SKILLS_DETAILED.keys())
-        return {
-            "error": f"Role '{target_role}' not found",
-            "available_roles": available
-        }
+    matched = sorted(s for s in required_set if s in student_set)
+    missing = sorted(s for s in required_set if s not in student_set)
 
-    role_skills_map = ROLE_SKILLS_DETAILED[role_key]
+    match_pct = round(len(matched) / len(required_set) * 100) if required_set else 0
 
-    # Flatten role requirements
-    required_skills_list = []
-    for category, skills in role_skills_map.items():
-        required_skills_list.extend(skills)
-
-    required_skills_set = set(s for s in required_skills_list if normalize_skill(s) in SKILL_DATABASE)
-
-    # Categorize skills
-    matched_skills = []
-    missing_skills = []
-    proficiency_gaps = []  # Skills with insufficient proficiency
-
-    for skill_norm in required_skills_set:
-        skill_info = SKILL_DATABASE.get(skill_norm)
-        if not skill_info:
-            continue
-
-        if skill_norm in student_skills_normalized:
-            student_level = student_proficiency.get(skill_norm, "beginner")
-            if student_level == skill_info.required_level.value or (
-                ["beginner", "intermediate", "advanced", "expert"].index(student_level)
-                >= ["beginner", "intermediate", "advanced", "expert"].index(skill_info.required_level.value)
-            ):
-                matched_skills.append({
-                    "skill": skill_info.name,
-                    "category": skill_info.category,
-                    "current_level": student_level,
-                    "required_level": skill_info.required_level.value,
-                })
-            else:
-                proficiency_gaps.append({
-                    "skill": skill_info.name,
-                    "current_level": student_level,
-                    "required_level": skill_info.required_level.value,
-                    "gap": skill_info.required_level.value,
-                })
-        else:
-            missing_skills.append(skill_norm)
-
-    # Calculate metrics
-    total_required = len(required_skills_set)
-    matched_count = len(matched_skills)
-    missing_count = len(missing_skills) + len(proficiency_gaps)
-    match_percentage = round((matched_count / total_required * 100)) if total_required > 0 else 0
-
-    # Assess severity
-    if match_percentage >= 80:
-        severity = "low"
-        severity_description = "You're well-prepared for this role"
-    elif match_percentage >= 60:
-        severity = "medium"
-        severity_description = "You have a solid foundation, need some skills"
-    elif match_percentage >= 40:
-        severity = "high"
-        severity_description = "Significant skill gaps to address"
+    # Severity
+    if match_pct >= 80:
+        severity, severity_label = "low",      "Well Prepared"
+    elif match_pct >= 60:
+        severity, severity_label = "medium",   "Almost There"
+    elif match_pct >= 40:
+        severity, severity_label = "high",     "Needs Work"
     else:
-        severity = "critical"
-        severity_description = "Major preparation needed"
+        severity, severity_label = "critical", "Major Gap"
 
-    # Build learning path
-    all_missing_normalized = [normalize_skill(s) for s in missing_skills]
-    all_missing_normalized.extend([normalize_skill(s) for s, _ in [(p["skill"].lower(), "") for p in proficiency_gaps]])
+    # Build matched skill details
+    matched_details = []
+    for s in matched:
+        info = SKILL_DATABASE.get(s)
+        matched_details.append({
+            "key":      s,
+            "name":     info.name if info else s.title(),
+            "category": info.category if info else "General",
+        })
 
-    learning_path = build_learning_path(all_missing_normalized, SKILL_DATABASE)
-
-    # Calculate total learning time
-    total_hours = sum(item["learning_hours"] for item in learning_path)
-
-    return {
-        "success": True,
-        "target_role": target_role,
-        "match_percentage": match_percentage,
-        "severity": severity,
-        "severity_description": severity_description,
-        "total_required_skills": total_required,
-        "matched_count": matched_count,
-        "missing_count": missing_count,
-        "proficiency_gap_count": len(proficiency_gaps),
-        "matched_skills": matched_skills,
-        "missing_skills": missing_skills,
-        "proficiency_gaps": proficiency_gaps,
-        "learning_path": learning_path,
-        "total_learning_hours": total_hours,
-        "estimated_weeks": round(total_hours / 20),  # Assuming 20 hours/week study
-        "priority_order": [item["skill"] for item in learning_path[:5]],  # Top 5 to learn first
-    }
-
-
-def get_role_overview(target_role: str) -> dict:
-    """Get overview of skills needed for a role."""
-    role_key = normalize_skill(target_role)
-    if role_key not in ROLE_SKILLS_DETAILED:
-        return {"error": f"Role '{target_role}' not found"}
-
-    role_map = ROLE_SKILLS_DETAILED[role_key]
-    skills_list = []
-
-    for category, skills in role_map.items():
-        for skill_name in skills:
-            skill_info = SKILL_DATABASE.get(normalize_skill(skill_name))
-            if skill_info:
-                skills_list.append({
-                    "skill": skill_info.name,
-                    "category": skill_info.category,
-                    "required_level": skill_info.required_level.value,
-                    "importance": skill_info.importance_weight,
+    # Build missing skill details WITH resources
+    missing_details = []
+    for s in missing:
+        info = SKILL_DATABASE.get(s)
+        if info:
+            resources = []
+            for r in info.resources:
+                meta = RESOURCE_META.get(r.get("type", "tutorial"), RESOURCE_META["tutorial"])
+                resources.append({
+                    "name":  r["name"],
+                    "url":   r["url"],
+                    "type":  r.get("type", "tutorial"),
+                    "icon":  meta["icon"],
+                    "label": meta["label"],
                 })
+            missing_details.append({
+                "key":           s,
+                "name":          info.name,
+                "category":      info.category,
+                "learning_hours": info.learning_hours,
+                "learning_weeks": max(1, round(info.learning_hours / 20)),
+                "resources":     resources,
+            })
+        else:
+            missing_details.append({
+                "key":           s,
+                "name":          s.title(),
+                "category":      "General",
+                "learning_hours": 40,
+                "learning_weeks": 2,
+                "resources": [
+                    {"name": f"GeeksforGeeks — {s.title()}", "url": f"https://www.geeksforgeeks.org/{s.replace(' ','-')}/", "type": "tutorial", "icon": "📖", "label": "Tutorial"},
+                    {"name": f"W3Schools — {s.title()}",     "url": f"https://www.w3schools.com/{s.replace(' ','_')}/",     "type": "tutorial", "icon": "📖", "label": "Tutorial"},
+                    {"name": f"YouTube — {s.title()}",       "url": f"https://www.youtube.com/results?search_query={s.replace(' ','+')}+tutorial", "type": "video", "icon": "▶️", "label": "Video"},
+                ],
+            })
+
+    total_hours = sum(s["learning_hours"] for s in missing_details)
 
     return {
-        "role": target_role,
-        "total_skills": len(skills_list),
-        "skills": skills_list,
-        "categories": list(set(s["category"] for s in skills_list)),
+        "target_role":          target_role,
+        "match_percentage":     match_pct,
+        "severity":             severity,
+        "severity_label":       severity_label,
+        "total_required_skills": len(required_set),
+        "matched_count":        len(matched),
+        "missing_count":        len(missing),
+        "matched_skills":       matched_details,
+        "missing_skills":       missing_details,
+        "total_learning_hours": total_hours,
+        "estimated_weeks":      max(1, round(total_hours / 20)),
     }
