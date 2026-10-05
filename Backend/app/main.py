@@ -23,6 +23,7 @@ from app.routes import (
     readiness,
     certifications,
     internships,
+    recommendations,
 )
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,11 @@ app.include_router(
     internships.router,
     prefix="/api/internships",
     tags=["internships"],
+)
+app.include_router(
+    recommendations.router,
+    prefix="/api/recommendations",
+    tags=["recommendations"],
 )
 
 app.include_router(recruiters.router, prefix="/api/recruiters", tags=["recruiters"])

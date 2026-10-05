@@ -98,11 +98,19 @@
         <span class="coming-soon">Coming Soon</span>
       </div>
       <div class="card ai-card">
-        <h3>Recommended Jobs/Roles</h3>
-        <p class="placeholder-note">Role recommendations will appear here once the intelligent recommendation engine is connected.</p>
-        <span class="coming-soon">Coming Soon</span>
-      </div>
+
+    <h3>Recommended Jobs/Roles</h3>
+
+    <div id="recommendedJobs">
+
+        <div class="state-message">
+            <span class="spinner"></span>
+            Loading recommended jobs...
+        </div>
+
     </div>
+
+</div>
   </div>
 
   <script src="../js/api.js"></script>
@@ -138,8 +146,14 @@
     }
 
     async function loadStudentDashboard() {
-      let applications = [], interviews = [], offers = [], openDrives = [], summary = null, eligibleCount = null, readiness = null;
-
+    let applications = [];
+    let interviews = [];
+    let offers = [];
+    let openDrives = [];
+    let summary = null;
+    let eligibleCount = null;
+    let readiness = null;
+    let recommendedJobs = [];
       try {
         const [appsRes, interviewsRes, offersRes, drivesRes, summaryRes] = await Promise.all([
           apiFetch("/api/applications/mine"),
@@ -161,10 +175,15 @@
       }
 
       // These two are optional: if either fails, the rest of the dashboard still shows.
-      const [eligibleResult, readinessResult] = await Promise.allSettled([
-        apiFetch("/api/analytics/student/eligible-drives-count"),
-        apiFetch("/api/readiness/me"),
-      ]);
+      const [
+    eligibleResult,
+    readinessResult,
+    recommendationsResult
+] = await Promise.allSettled([
+    apiFetch("/api/analytics/student/eligible-drives-count"),
+    apiFetch("/api/readiness/me"),
+    apiFetch("/api/recommendations/jobs"),
+]);
       try {
         if (eligibleResult.status === "fulfilled" && eligibleResult.value) eligibleCount = eligibleResult.value.data.count;
       } catch (err) {
@@ -175,7 +194,17 @@
       } catch (err) {
         readiness = null;
       }
-
+      try {
+    if (
+        recommendationsResult.status === "fulfilled" &&
+        recommendationsResult.value
+    ) {
+        recommendedJobs =
+            recommendationsResult.value.data || [];
+    }
+} catch (err) {
+    recommendedJobs = [];
+}
       renderStudentStats(applications, interviews, offers, summary, eligibleCount, readiness);
       renderApplicationStatusChart(applications);
       renderApplicationTrendChart(applications, interviews, offers);
@@ -183,6 +212,7 @@
       renderRecentApplications(applications);
       renderRecommendedDrives(openDrives);
       renderReadinessCard(readiness);
+      renderRecommendedJobs(recommendedJobs);
     }
 
     function renderStudentStats(applications, interviews, offers, summary, eligibleCount, readiness) {
@@ -435,6 +465,60 @@
         )
         .join("");
     }
+    function renderRecommendedJobs(jobs) {
+    const el = document.getElementById("recommendedJobs");
+    if (!el) return;
+
+    if (!jobs || jobs.length === 0) {
+        el.innerHTML = `
+            <div class="state-message">
+                No recommended jobs available right now.
+            </div>
+        `;
+        return;
+    }
+
+    el.innerHTML = jobs.slice(0, 5).map((job, index) => `
+        <div class="list-row">
+            <div>
+                <div class="list-row-main">
+                    ${job.job_title || "Unknown Role"}
+                    — ${job.company_name || "Unknown Company"}
+                </div>
+
+               <div class="list-row-sub">
+    📍 ${job.location || "Location N/A"}
+    &nbsp;&nbsp;
+    💰 CTC: ${job.ctc || "N/A"} LPA
+    &nbsp;&nbsp;
+    💼 ${job.mode || "N/A"}
+</div>
+            </div>
+
+            <button
+                type="button"
+                class="btn-primary"
+                onclick="openRecommendedJob(${index})"
+            >
+                View Details
+            </button>
+        </div>
+    `).join("");
+
+    window.recommendedJobsData = jobs.slice(0, 5);
+}
+
+function openRecommendedJob(index) {
+    const job = window.recommendedJobsData[index];
+    if (!job) return;
+
+    sessionStorage.setItem(
+        "selectedRecommendedJob",
+        JSON.stringify(job)
+    );
+
+    window.location.href = "job-details.html";
+}
   </script>
 </body>
 </html>
