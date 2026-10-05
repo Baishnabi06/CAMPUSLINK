@@ -42,77 +42,91 @@
           <h2 id="welcomeHeading">Welcome</h2>
           <p class="welcome-subtitle">Track your placement journey and upcoming opportunities.</p>
         </div>
-        <span class="portal-badge">Student Portal</span>
+        <span class="portal-badge" id="portalBadge">Student Portal</span>
       </header>
 
       <div id="kpiGrid" class="dashboard-grid">
         <div class="state-message"><span class="spinner"></span>Loading dashboard data...</div>
       </div>
 
-      <div class="section-heading"><h3>Analytics</h3></div>
+      <div class="section-heading">
+        <div class="section-heading-title">
+          <span class="section-icon" id="analyticsIcon"></span>
+          <h3>Analytics</h3>
+        </div>
+      </div>
       <div class="chart-grid">
         <div class="chart-card">
-          <h4>Application Status</h4>
+          <h4><span class="chart-icon" id="statusChartIcon"></span>Application Status</h4>
           <div class="chart-container"><canvas id="statusChart"></canvas></div>
           <div id="statusChartEmpty" class="state-message" style="display:none;">No applications yet.</div>
         </div>
         <div class="chart-card">
-          <h4>Activity Over Time</h4>
+          <h4><span class="chart-icon" id="trendChartIcon"></span>Activity Over Time</h4>
           <div class="chart-container"><canvas id="trendChart"></canvas></div>
           <div id="trendChartEmpty" class="state-message" style="display:none;">Not enough activity yet to show a trend.</div>
         </div>
       </div>
 
       <div class="section-heading">
-        <h3>Upcoming Interviews</h3>
+        <div class="section-heading-title">
+          <span class="section-icon" id="interviewsIcon"></span>
+          <h3>Upcoming Interviews</h3>
+        </div>
       </div>
       <div class="card" id="upcomingInterviews">
         <div class="state-message"><span class="spinner"></span>Loading...</div>
       </div>
 
       <div class="section-heading">
-        <h3>Recent Applications</h3>
-        <a href="student-applications.html" class="btn-outline">View All</a>
+        <div class="section-heading-title">
+          <span class="section-icon" id="applicationsIcon"></span>
+          <h3>Recent Applications</h3>
+        </div>
+        <a href="student-applications.html" class="btn-outline">View All <span class="icon" id="viewAllAppsIcon"></span></a>
       </div>
       <div class="card" id="recentApplications">
         <div class="state-message"><span class="spinner"></span>Loading...</div>
       </div>
 
       <div class="section-heading">
-        <h3>Recommended Placement Drives</h3>
-        <a href="student-drives.html" class="btn-outline">View All</a>
+        <div class="section-heading-title">
+          <span class="section-icon" id="drivesIcon"></span>
+          <h3>Recommended Placement Drives</h3>
+        </div>
+        <a href="student-drives.html" class="btn-outline">View All <span class="icon" id="viewAllDrivesIcon"></span></a>
       </div>
       <div class="card" id="recommendedDrives">
         <div class="state-message"><span class="spinner"></span>Loading...</div>
       </div>
 
       <div class="card ai-card">
-        <h3>Readiness Score</h3>
+        <h3><span class="section-icon" id="readinessIcon"></span>Readiness Score</h3>
         <div id="readinessCardBody">
           <div class="state-message"><span class="spinner"></span>Loading...</div>
         </div>
       </div>
+
       <div class="card ai-card">
-        <h3>Skill Gap Analysis</h3>
-        <p class="placeholder-note">Skill and competency insights will be added as soon as the AI analysis pipeline is live.</p>
-        <span class="coming-soon">Coming Soon</span>
+        <h3><span class="section-icon" id="skillGapIcon"></span>Skill Gap Analysis</h3>
+        <div id="skillGapCardBody">
+          <div class="state-message"><span class="spinner"></span>Loading...</div>
+        </div>
       </div>
+
       <div class="card ai-card">
-
-    <h3>Recommended Jobs/Roles</h3>
-
-    <div id="recommendedJobs">
-
-        <div class="state-message">
+        <h3><span class="section-icon" id="recommendedJobsIcon"></span>Recommended Jobs/Roles</h3>
+        <div id="recommendedJobs">
+          <div class="state-message">
             <span class="spinner"></span>
             Loading recommended jobs...
+          </div>
         </div>
-
+      </div>
     </div>
-
-</div>
   </div>
 
+  <script src="../js/icons.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/layout.js"></script>
@@ -142,7 +156,26 @@
       renderShell(user, "student-dashboard.html");
       document.getElementById("welcomeHeading").innerHTML = `Good morning, ${user.name}`;
       document.querySelector(".welcome-subtitle").textContent = "Track your placement journey and upcoming opportunities.";
+      placeStaticIcons();
       loadStudentDashboard();
+    }
+
+    // Icons that live in static markup (section headings, chart titles,
+    // card titles, "View All" links, the portal badge) are filled in here
+    // once, right after the shell renders.
+    function placeStaticIcons() {
+      document.getElementById("portalBadge").innerHTML = iconSpan("graduationCap", 14) + " Student Portal";
+      document.getElementById("analyticsIcon").innerHTML = ICONS.barChart;
+      document.getElementById("statusChartIcon").innerHTML = ICONS.barChart;
+      document.getElementById("trendChartIcon").innerHTML = ICONS.trendingUp;
+      document.getElementById("interviewsIcon").innerHTML = ICONS.mic;
+      document.getElementById("applicationsIcon").innerHTML = ICONS.folder;
+      document.getElementById("viewAllAppsIcon").innerHTML = ICONS.arrowRight;
+      document.getElementById("drivesIcon").innerHTML = ICONS.briefcase;
+      document.getElementById("viewAllDrivesIcon").innerHTML = ICONS.arrowRight;
+      document.getElementById("readinessIcon").innerHTML = ICONS.target;
+      document.getElementById("skillGapIcon").innerHTML = ICONS.activity;
+      document.getElementById("recommendedJobsIcon").innerHTML = ICONS.search;
     }
 
     async function loadStudentDashboard() {
@@ -154,35 +187,43 @@
     let eligibleCount = null;
     let readiness = null;
     let recommendedJobs = [];
+    let studentProfile = null;
+    let skillGap = null;
+
       try {
-        const [appsRes, interviewsRes, offersRes, drivesRes, summaryRes] = await Promise.all([
+        const [appsRes, interviewsRes, offersRes, drivesRes, summaryRes, profileRes] = await Promise.all([
           apiFetch("/api/applications/mine"),
           apiFetch("/api/interviews/student/mine"),
           apiFetch("/api/offers/mine"),
           apiFetch("/api/drives/open"),
           apiFetch("/api/analytics/student/summary"),
+          apiFetch("/api/students/me"),
         ]);
         applications = appsRes.data;
         interviews = interviewsRes.data;
         offers = offersRes.data;
         openDrives = drivesRes.data;
         summary = summaryRes.data;
+        studentProfile = profileRes.data;
       } catch (err) {
         document.getElementById("kpiGrid").innerHTML =
           `<div class="state-message error">Unable to load dashboard data. Please try again.</div>`;
         renderReadinessCard(null);
+        renderSkillGapCard(null);
         return;
       }
 
-      // These two are optional: if either fails, the rest of the dashboard still shows.
+      // These are optional: if they fail, the rest of the dashboard still shows.
       const [
     eligibleResult,
     readinessResult,
-    recommendationsResult
+    recommendationsResult,
+    skillGapResult
 ] = await Promise.allSettled([
     apiFetch("/api/analytics/student/eligible-drives-count"),
     apiFetch("/api/readiness/me"),
     apiFetch("/api/recommendations/jobs"),
+    analyzeSkillGap(studentProfile),
 ]);
       try {
         if (eligibleResult.status === "fulfilled" && eligibleResult.value) eligibleCount = eligibleResult.value.data.count;
@@ -205,6 +246,14 @@
 } catch (err) {
     recommendedJobs = [];
 }
+      try {
+        if (skillGapResult.status === "fulfilled" && skillGapResult.value) {
+          skillGap = skillGapResult.value;
+        }
+      } catch (err) {
+        skillGap = null;
+      }
+
       renderStudentStats(applications, interviews, offers, summary, eligibleCount, readiness);
       renderApplicationStatusChart(applications);
       renderApplicationTrendChart(applications, interviews, offers);
@@ -212,7 +261,42 @@
       renderRecentApplications(applications);
       renderRecommendedDrives(openDrives);
       renderReadinessCard(readiness);
+      renderSkillGapCard(skillGap);
       renderRecommendedJobs(recommendedJobs);
+    }
+
+    async function analyzeSkillGap(studentProfile) {
+      if (!studentProfile || !studentProfile.skills || studentProfile.skills.length === 0) {
+        return null;
+      }
+
+      // Get available roles first
+      try {
+        const rolesRes = await apiFetch("/api/skill-gap/roles");
+        const roles = rolesRes.data || [];
+
+        if (roles.length === 0) {
+          return null;
+        }
+
+        // Analyze against the first recommended role (or most common role)
+        // In a production app, you'd let the student select their target role
+        const targetRole = roles[0];
+
+        const analysisRes = await apiFetch("/api/skill-gap/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            student_skills: studentProfile.skills,
+            target_role: targetRole,
+          }),
+        });
+
+        return analysisRes.data;
+      } catch (err) {
+        console.error("Skill gap analysis failed:", err);
+        return null;
+      }
     }
 
     function renderStudentStats(applications, interviews, offers, summary, eligibleCount, readiness) {
@@ -225,26 +309,28 @@
       if (readiness) {
         const band = rdBand(readiness);
         readinessCard = {
-          icon: "🎯",
+          icon: "target",
+          color: "indigo",
           label: "Readiness Score",
-          value: `${rdEsc(Math.round(Number(readiness.score) || 0))}<span style="font-size:0.55em;font-weight:600;color:#6b7280">/100</span>`,
+          value: `${rdEsc(Math.round(Number(readiness.score) || 0))}<span style="font-size:0.55em;font-weight:600;color:var(--text-muted)">/100</span>`,
           sub: rdEsc(band[0]) + ", view details",
           subColor: band[1],
           href: RD_PAGE,
         };
       } else {
-        readinessCard = { icon: "🎯", label: "Readiness Score", value: "—", sub: "View details", href: RD_PAGE };
+        readinessCard = { icon: "target", color: "indigo", label: "Readiness Score", value: "—", sub: "View details", href: RD_PAGE };
       }
 
       const cards = [
         readinessCard,
-        { icon: "📄", label: "Total Applications", value: applications.length, sub: "All time" },
-        { icon: "⏳", label: "Active Applications", value: active, sub: "In progress" },
-        { icon: "⭐", label: "Shortlisted", value: shortlisted, sub: "Awaiting next step" },
-        { icon: "🎙️", label: "Interviews", value: interviews.length, sub: `${upcoming} upcoming` },
-        { icon: "🎉", label: "Offers Received", value: offers.length, sub: "Total" },
+        { icon: "fileText", color: "blue", label: "Total Applications", value: applications.length, sub: "All time" },
+        { icon: "clock", color: "amber", label: "Active Applications", value: active, sub: "In progress" },
+        { icon: "star", color: "violet", label: "Shortlisted", value: shortlisted, sub: "Awaiting next step" },
+        { icon: "mic", color: "teal", label: "Interviews", value: interviews.length, sub: `${upcoming} upcoming` },
+        { icon: "gift", color: "emerald", label: "Offers Received", value: offers.length, sub: "Total" },
         {
-          icon: "✅",
+          icon: "checkCircle",
+          color: "cyan",
           label: "Eligible Drives",
           value: eligibleCount !== null ? eligibleCount : "—",
           sub: summary && summary.available_drives ? `of ${summary.available_drives} open` : "Open opportunities",
@@ -254,7 +340,7 @@
       document.getElementById("kpiGrid").innerHTML = cards
         .map((c) => {
           const inner = `
-            <div class="kpi-icon">${c.icon}</div>
+            <div class="kpi-icon icon-${c.color}">${iconSpan(c.icon, 22)}</div>
             <div class="kpi-body">
               <div class="kpi-label">${c.label}</div>
               <div class="kpi-value">${c.value}</div>
@@ -291,6 +377,38 @@
             <div class="list-row-sub">${next}</div>
           </div>
           <a href="${RD_PAGE}" class="btn-primary">View details</a>
+        </div>`;
+    }
+
+    function renderSkillGapCard(skillGap) {
+      const el = document.getElementById("skillGapCardBody");
+      if (!el) return;
+
+      if (!skillGap) {
+        el.innerHTML = `
+          <div class="list-row">
+            <div class="list-row-sub">Add skills to your profile to see your skill gap analysis.</div>
+            <a href="student-profile.html" class="btn-primary">Edit Profile</a>
+          </div>`;
+        return;
+      }
+
+      const matchPercentage = skillGap.match_percentage || 0;
+      const matchColor = matchPercentage >= 75 ? "#16a34a" : matchPercentage >= 50 ? "#2563eb" : "#d97706";
+      const matchStatus = matchPercentage >= 75 ? "Great match" : matchPercentage >= 50 ? "Good match" : "Needs work";
+
+      el.innerHTML = `
+        <div class="list-row">
+          <div>
+            <div class="list-row-main">
+              ${rdEsc(skillGap.target_role)}
+              <span style="color:${matchColor};font-weight:600">${matchPercentage}% match</span>
+            </div>
+            <div class="list-row-sub">
+              ${rdEsc(skillGap.matched_count)} of ${rdEsc(skillGap.total_required_skills)} skills · ${matchStatus}
+            </div>
+          </div>
+          <a href="skill-gap-details.html" class="btn-primary">View Analysis</a>
         </div>`;
     }
 
@@ -410,8 +528,8 @@
           (i) => `
           <div class="list-row">
             <div>
-              <div class="list-row-main">${i.company_name}</div>
-              <div class="list-row-sub">${i.date} | ${i.start_time}-${i.end_time} | ${i.mode}</div>
+              <div class="list-row-main">${iconSpan("building", 14)} ${i.company_name}</div>
+              <div class="list-row-sub">${i.date} · ${i.start_time}–${i.end_time} · ${i.mode}</div>
             </div>
             <span class="status-badge ${i.status}">${i.status}</span>
           </div>`
@@ -433,7 +551,7 @@
           (a) => `
           <div class="list-row">
             <div>
-              <div class="list-row-main">${a.drive?.job_title || "Unknown role"} — ${a.drive?.company_name || "Unknown"}</div>
+              <div class="list-row-main">${iconSpan("briefcase", 14)} ${a.drive?.job_title || "Unknown role"} — ${a.drive?.company_name || "Unknown"}</div>
               <div class="list-row-sub">Applied ${new Date(a.applied_at).toLocaleDateString()}</div>
             </div>
             <span class="status-badge ${a.status}">${a.status}</span>
@@ -455,9 +573,11 @@
           (d) => `
           <div class="list-row">
             <div>
-              <div class="list-row-main">${d.job_title} — ${d.company_name}</div>
+              <div class="list-row-main">${iconSpan("briefcase", 14)} ${d.job_title} — ${d.company_name}</div>
               <div class="list-row-sub">
-                ${d.location || "Location N/A"} | CTC ${d.ctc} LPA | Deadline ${new Date(d.application_deadline).toLocaleDateString()}
+                <span class="meta-inline">${iconSpan("mapPin", 13)} ${d.location || "Location N/A"}</span>
+                <span class="meta-inline">${iconSpan("wallet", 13)} CTC ${d.ctc} LPA</span>
+                <span class="meta-inline">${iconSpan("clock", 13)} Deadline ${new Date(d.application_deadline).toLocaleDateString()}</span>
               </div>
             </div>
             <a href="student-drives.html" class="btn-primary">View</a>
@@ -465,34 +585,33 @@
         )
         .join("");
     }
-    function renderRecommendedJobs(jobs) {
-    const el = document.getElementById("recommendedJobs");
-    if (!el) return;
 
-    if (!jobs || jobs.length === 0) {
+    function renderRecommendedJobs(jobs) {
+      const el = document.getElementById("recommendedJobs");
+      if (!el) return;
+
+      if (!jobs || jobs.length === 0) {
         el.innerHTML = `
             <div class="state-message">
                 No recommended jobs available right now.
             </div>
         `;
         return;
-    }
+      }
 
-    el.innerHTML = jobs.slice(0, 5).map((job, index) => `
+      el.innerHTML = jobs.slice(0, 5).map((job, index) => `
         <div class="list-row">
             <div>
                 <div class="list-row-main">
-                    ${job.job_title || "Unknown Role"}
+                    ${iconSpan("briefcase", 14)} ${job.job_title || "Unknown Role"}
                     — ${job.company_name || "Unknown Company"}
                 </div>
 
-               <div class="list-row-sub">
-    📍 ${job.location || "Location N/A"}
-    &nbsp;&nbsp;
-    💰 CTC: ${job.ctc || "N/A"} LPA
-    &nbsp;&nbsp;
-    💼 ${job.mode || "N/A"}
-</div>
+                <div class="list-row-sub">
+                    <span class="meta-inline">${iconSpan("mapPin", 13)} ${job.location || "Location N/A"}</span>
+                    <span class="meta-inline">${iconSpan("wallet", 13)} CTC: ${job.ctc || "N/A"} LPA</span>
+                    <span class="meta-inline">${iconSpan("briefcase", 13)} ${job.mode || "N/A"}</span>
+                </div>
             </div>
 
             <button
@@ -503,22 +622,22 @@
                 View Details
             </button>
         </div>
-    `).join("");
+      `).join("");
 
-    window.recommendedJobsData = jobs.slice(0, 5);
-}
+      window.recommendedJobsData = jobs.slice(0, 5);
+    }
 
-function openRecommendedJob(index) {
-    const job = window.recommendedJobsData[index];
-    if (!job) return;
+    function openRecommendedJob(index) {
+      const job = window.recommendedJobsData[index];
+      if (!job) return;
 
-    sessionStorage.setItem(
-        "selectedRecommendedJob",
-        JSON.stringify(job)
-    );
+      sessionStorage.setItem(
+          "selectedRecommendedJob",
+          JSON.stringify(job)
+      );
 
-    window.location.href = "job-details.html";
-}
+      window.location.href = "job-details.html";
+    }
   </script>
 </body>
 </html>

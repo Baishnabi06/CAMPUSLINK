@@ -36,118 +36,51 @@ const NAV_CONFIG = {
 
 function getTopbarMeta(activePage) {
   const metaMap = {
-    "student-dashboard.html": {
-      label: "Dashboard",
-      subtitle: "Placement overview",
-    },
-    "profile.html": {
-      label: "Profile",
-      subtitle: "Student profile",
-    },
-    "student-drives.html": {
-      label: "Placement Drives",
-      subtitle: "Open opportunities",
-    },
-    "student-applications.html": {
-      label: "Applications",
-      subtitle: "My applications",
-    },
-    "student-interviews.html": {
-      label: "Interviews",
-      subtitle: "Upcoming interviews",
-    },
-    "student-offers.html": {
-      label: "Offers",
-      subtitle: "Offer pipeline",
-    },
-    "notifications.html": {
-      label: "Notifications",
-      subtitle: "Latest updates",
-    },
+    "student-dashboard.html": { label: "Dashboard", subtitle: "Placement overview" },
+    "profile.html": { label: "Profile", subtitle: "Student profile" },
+    "student-drives.html": { label: "Placement Drives", subtitle: "Open opportunities" },
+    "student-applications.html": { label: "Applications", subtitle: "My applications" },
+    "student-interviews.html": { label: "Interviews", subtitle: "Upcoming interviews" },
+    "student-offers.html": { label: "Offers", subtitle: "Offer pipeline" },
+    "notifications.html": { label: "Notifications", subtitle: "Latest updates" },
 
-    "recruiter-dashboard.html": {
-      label: "Dashboard",
-      subtitle: "Hiring overview",
-    },
-    "recruiter-company-profile.html": {
-      label: "Company Profile",
-      subtitle: "Organization profile",
-    },
-    "recruiter-drives.html": {
-      label: "Drives",
-      subtitle: "Drive pipeline",
-    },
-    "recruiter-applicants.html": {
-      label: "Applicants",
-      subtitle: "Candidate pipeline",
-    },
-    "recruiter-interviews.html": {
-      label: "Interviews",
-      subtitle: "Interview schedule",
-    },
-    "recruiter-offers.html": {
-      label: "Offers",
-      subtitle: "Offer management",
-    },
-    "recruiter-documents.html": {
-      label: "Documents",
-      subtitle: "Candidate documents",
-    },
+    "recruiter-dashboard.html": { label: "Dashboard", subtitle: "Hiring overview" },
+    "recruiter-company-profile.html": { label: "Company Profile", subtitle: "Organization profile" },
+    "recruiter-drives.html": { label: "Drives", subtitle: "Drive pipeline" },
+    "recruiter-applicants.html": { label: "Applicants", subtitle: "Candidate pipeline" },
+    "recruiter-interviews.html": { label: "Interviews", subtitle: "Interview schedule" },
+    "recruiter-offers.html": { label: "Offers", subtitle: "Offer management" },
+    "recruiter-documents.html": { label: "Documents", subtitle: "Candidate documents" },
 
-    "officer-dashboard.html": {
-      label: "Dashboard",
-      subtitle: "Operations overview",
-    },
-    "officer-students.html": {
-      label: "Students",
-      subtitle: "Student records",
-    },
-    "officer-recruiters.html": {
-      label: "Recruiters",
-      subtitle: "Partner network",
-    },
-    "officer-drives.html": {
-      label: "Drives",
-      subtitle: "Drive monitoring",
-    },
-    "officer-applications.html": {
-      label: "Applications",
-      subtitle: "Application review",
-    },
-    "officer-interviews.html": {
-      label: "Interviews",
-      subtitle: "Interview flow",
-    },
-    "officer-offers.html": {
-      label: "Offers",
-      subtitle: "Offers overview",
-    },
-    "officer-documents.html": {
-      label: "Documents",
-      subtitle: "Verification queue",
-    },
-    "officer-analytics.html": {
-      label: "Analytics",
-      subtitle: "Platform metrics",
-    },
+    "officer-dashboard.html": { label: "Dashboard", subtitle: "Operations overview" },
+    "officer-students.html": { label: "Students", subtitle: "Student records" },
+    "officer-recruiters.html": { label: "Recruiters", subtitle: "Partner network" },
+    "officer-drives.html": { label: "Drives", subtitle: "Drive monitoring" },
+    "officer-applications.html": { label: "Applications", subtitle: "Application review" },
+    "officer-interviews.html": { label: "Interviews", subtitle: "Interview flow" },
+    "officer-offers.html": { label: "Offers", subtitle: "Offers overview" },
+    "officer-documents.html": { label: "Documents", subtitle: "Verification queue" },
+    "officer-analytics.html": { label: "Analytics", subtitle: "Platform metrics" },
 
-    "settings.html": {
-      label: "Settings",
-      subtitle: "Account preferences",
-    },
+    "settings.html": { label: "Settings", subtitle: "Account preferences" },
   };
 
-  return (
-    metaMap[activePage] || {
-      label: "Dashboard",
-      subtitle: "Overview",
-    }
-  );
+  return metaMap[activePage] || { label: "Dashboard", subtitle: "Overview" };
 }
 
 function applyAppearancePreference() {
   const compact = localStorage.getItem("campuslink_compact_mode") === "true";
   document.body.classList.toggle("compact-mode", compact);
+}
+
+// The light/dark theme switcher has been removed. The portal is light-only.
+// This pins the page to the light palette (so the OS dark setting can't
+// switch it) and clears any theme value saved by older versions.
+document.documentElement.setAttribute("data-theme", "light");
+try {
+  localStorage.removeItem("campuslink_theme");
+} catch (e) {
+  /* storage unavailable, nothing to clean up */
 }
 
 function renderShell(user, activePage) {
@@ -174,8 +107,7 @@ function renderShell(user, activePage) {
         : "";
 
       return `
-        <a href="${item.href}" class="nav-link ${item.href === activePage ? "active" : ""
-        }">
+        <a href="${item.href}" class="nav-link ${item.href === activePage ? "active" : ""}">
           <span class="nav-icon">${item.icon}</span>
           <span class="nav-label">${item.label}</span>
           ${badge}
@@ -202,8 +134,7 @@ function renderShell(user, activePage) {
       <div class="sidebar-settings">
         <a
           href="settings.html"
-          class="nav-link ${activePage === "settings.html" ? "active" : ""
-    }"
+          class="nav-link ${activePage === "settings.html" ? "active" : ""}"
         >
           <span class="nav-icon">⚙</span>
           <span class="nav-label">Settings</span>
@@ -254,16 +185,12 @@ function renderShell(user, activePage) {
     </div>
   `;
 
-  document
-    .getElementById("content-mount")
-    .appendChild(pageContent);
+  document.getElementById("content-mount").appendChild(pageContent);
 
   pageContent.style.display = "block";
 
   // Logout
-  document
-    .getElementById("logoutBtn")
-    .addEventListener("click", logout);
+  document.getElementById("logoutBtn").addEventListener("click", logout);
 
   // Notification button
   document.querySelector(".notification-button").onclick = () => {
@@ -274,9 +201,10 @@ function renderShell(user, activePage) {
   document.querySelector(".user-chip").onclick = () => {
     window.location.href = "profile.html";
   };
+
   // Load unread notification count
   loadUnreadBadge();
-  applyAppearancePreference();;
+  applyAppearancePreference();
 }
 
 async function loadUnreadBadge() {

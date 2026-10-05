@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Skill Gap Analysis — CampusLink</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .skill-gap-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .match-percentage {
+      font-size: 3em;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .match-bar {
+      height: 12px;
+      background-color: var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 16px 0;
+    }
+
+    .match-bar-fill {
+      height: 100%;
+      background: linear-gradient(to right, #16a34a, #2563eb);
+      transition: width 0.3s ease;
+    }
+
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .skill-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 0.9em;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .skill-pill.matched {
+      background-color: rgba(22, 163, 74, 0.1);
+      color: #16a34a;
+      border: 1px solid #16a34a;
+    }
+
+    .skill-pill.missing {
+      background-color: rgba(217, 119, 6, 0.1);
+      color: #d97706;
+      border: 1px solid #d97706;
+    }
+
+    .skill-icon {
+      font-size: 1.2em;
+    }
+
+    .recommendation-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 12px 0;
+      transition: box-shadow 0.15s ease;
+    }
+
+    .recommendation-card:hover {
+      box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+    }
+
+    .recommendation-skill {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .recommendation-text {
+      color: var(--text-muted);
+      font-size: 0.95em;
+      line-height: 1.5;
+    }
+
+    .role-selector {
+      display: flex;
+      gap: 12px;
+      margin: 24px 0;
+      flex-wrap: wrap;
+    }
+
+    .role-button {
+      padding: 8px 16px;
+      border: 2px solid var(--border-color);
+      background-color: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      color: var(--text-secondary);
+    }
+
+    .role-button:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .role-button.active {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    .section-divider {
+      margin: 32px 0;
+      padding: 32px 0;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .stat-box {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2em;
+      font-weight: 700;
+      color: var(--primary-color);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 0.85em;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+
+    .error-message {
+      background-color: rgba(220, 38, 38, 0.1);
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      border-radius: 8px;
+      padding: 16px;
+      color: #dc2626;
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="app-shell"></div>
+
+  <div id="page-content" style="display: none;">
+    <div class="page-shell">
+      <header class="dashboard-header">
+        <div>
+          <h2>Skill Gap Analysis</h2>
+          <p class="welcome-subtitle">Understand your skills and identify areas for growth.</p>
+        </div>
+      </header>
+
+      <div class="skill-gap-container">
+        <!-- Role Selector -->
+        <div class="card">
+          <h3>Select Target Role</h3>
+          <div id="roleSelector" class="role-selector">
+            <div class="state-message"><span class="spinner"></span>Loading roles...</div>
+          </div>
+        </div>
+
+        <!-- Main Analysis Card -->
+        <div class="card">
+          <div id="analysisContent">
+            <div class="loading"><span class="spinner"></span>Analyzing your skills...</div>
+          </div>
+        </div>
+
+        <!-- Matched Skills -->
+        <div class="card">
+          <h3>Skills You Have ✓</h3>
+          <div id="matchedSkillsContent">
+            <div class="state-message"><span class="spinner"></span>Loading...</div>
+          </div>
+        </div>
+
+        <!-- Missing Skills & Recommendations -->
+        <div class="card">
+          <h3>Skills to Develop</h3>
+          <div id="recommendationsContent">
+            <div class="state-message"><span class="spinner"></span>Loading...</div>
+          </div>
+        </div>
+
+        <!-- Back Button -->
+        <div style="margin: 32px 0; text-align: center;">
+          <a href="student-dashboard.html" class="btn-outline">← Back to Dashboard</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/icons.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/layout.js"></script>
+  <script>
+    const user = requireAuth(["student"]);
+    let availableRoles = [];
+    let studentProfile = null;
+    let currentAnalysis = null;
+
+    if (user) {
+      renderShell(user, "skill-gap-details.html");
+      loadSkillGapPage();
+    }
+
+    async function loadSkillGapPage() {
+      try {
+        // Fetch available roles
+        const rolesRes = await apiFetch("/api/skill-gap/roles");
+        availableRoles = rolesRes.data || [];
+
+        // Fetch student profile
+        const profileRes = await apiFetch("/api/students/me");
+        studentProfile = profileRes.data;
+
+        if (!studentProfile || !studentProfile.skills || studentProfile.skills.length === 0) {
+          document.getElementById("analysisContent").innerHTML = `
+            <div class="error-message">
+              You haven't added any skills to your profile yet. 
+              <a href="profile.html">Add skills</a> to see your skill gap analysis.
+            </div>`;
+          document.getElementById("roleSelector").innerHTML = "";
+          document.getElementById("matchedSkillsContent").innerHTML = "";
+          document.getElementById("recommendationsContent").innerHTML = "";
+          return;
+        }
+
+        // Render role selector
+        renderRoleSelector(availableRoles);
+
+        // Analyze first role
+        if (availableRoles.length > 0) {
+          await analyzeRole(availableRoles[0]);
+        }
+      } catch (err) {
+        console.error("Failed to load skill gap page:", err);
+        document.getElementById("analysisContent").innerHTML = `
+          <div class="error-message">Failed to load skill gap data. Please try again.</div>`;
+      }
+    }
+
+    function renderRoleSelector(roles) {
+      const container = document.getElementById("roleSelector");
+      if (roles.length === 0) {
+        container.innerHTML = "<p>No roles available</p>";
+        return;
+      }
+
+      container.innerHTML = roles
+        .map((role, index) => `
+          <button 
+            class="role-button ${index === 0 ? "active" : ""}"
+            onclick="analyzeRole('${role}')"
+            type="button"
+          >
+            ${role.charAt(0).toUpperCase() + role.slice(1)}
+          </button>
+        `)
+        .join("");
+    }
+
+    async function analyzeRole(role) {
+      // Update active button
+      document.querySelectorAll(".role-button").forEach((btn) => {
+        btn.classList.remove("active");
+        if (btn.textContent.toLowerCase() === role.toLowerCase()) {
+          btn.classList.add("active");
+        }
+      });
+
+      // Show loading
+      document.getElementById("analysisContent").innerHTML = `<div class="loading"><span class="spinner"></span>Analyzing...</div>`;
+      document.getElementById("matchedSkillsContent").innerHTML = `<div class="loading"><span class="spinner"></span>Loading...</div>`;
+      document.getElementById("recommendationsContent").innerHTML = `<div class="loading"><span class="spinner"></span>Loading...</div>`;
+
+      try {
+        const analysisRes = await apiFetch("/api/skill-gap/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            student_skills: studentProfile.skills,
+            target_role: role,
+          }),
+        });
+
+        currentAnalysis = analysisRes.data;
+        renderAnalysis(currentAnalysis);
+      } catch (err) {
+        console.error("Analysis failed:", err);
+        document.getElementById("analysisContent").innerHTML = `
+          <div class="error-message">Failed to analyze skills for this role.</div>`;
+      }
+    }
+
+    function renderAnalysis(analysis) {
+      if (!analysis) return;
+
+      const { match_percentage, matched_count, total_required_skills, missing_count, matched_skills, missing_skills, recommendations } = analysis;
+
+      // Main Analysis
+      const matchColor = match_percentage >= 75 ? "#16a34a" : match_percentage >= 50 ? "#2563eb" : "#d97706";
+      const matchStatus = match_percentage >= 75 ? "Great match!" : match_percentage >= 50 ? "Good match" : "Needs work";
+
+      document.getElementById("analysisContent").innerHTML = `
+        <div>
+          <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: 24px;">
+            <div class="match-percentage" style="color: ${matchColor};">${match_percentage}%</div>
+            <div>
+              <div style="font-size: 1.2em; font-weight: 600;">${matchStatus}</div>
+              <div style="color: var(--text-muted); margin-top: 4px;">
+                You have ${matched_count} of ${total_required_skills} required skills
+              </div>
+            </div>
+          </div>
+
+          <div class="match-bar">
+            <div class="match-bar-fill" style="width: ${match_percentage}%"></div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-value">${matched_count}</div>
+              <div class="stat-label">Skills Matched</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value">${missing_count}</div>
+              <div class="stat-label">Skills to Learn</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value">${total_required_skills}</div>
+              <div class="stat-label">Total Required</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Matched Skills
+      if (matched_skills.length > 0) {
+        document.getElementById("matchedSkillsContent").innerHTML = `
+          <div class="skills-grid">
+            ${matched_skills
+              .map(
+                (skill) => `
+              <div class="skill-pill matched">
+                <span class="skill-icon">✓</span>
+                <span>${skill.charAt(0).toUpperCase() + skill.slice(1)}</span>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        `;
+      } else {
+        document.getElementById("matchedSkillsContent").innerHTML =
+          `<p style="color: var(--text-muted);">No matched skills yet. Keep learning!</p>`;
+      }
+
+      // Recommendations
+      if (recommendations && recommendations.length > 0) {
+        document.getElementById("recommendationsContent").innerHTML = recommendations
+          .map(
+            (rec) => `
+          <div class="recommendation-card">
+            <div class="recommendation-skill">
+              <span class="skill-icon">→</span>
+              ${rec.skill.charAt(0).toUpperCase() + rec.skill.slice(1)}
+            </div>
+            <div class="recommendation-text">${rec.recommendation}</div>
+          </div>
+        `
+          )
+          .join("");
+      } else {
+        document.getElementById("recommendationsContent").innerHTML =
+          `<p style="color: var(--text-muted);">You have all required skills for this role!</p>`;
+      }
+    }
+  </script>
+</body>
+</html>

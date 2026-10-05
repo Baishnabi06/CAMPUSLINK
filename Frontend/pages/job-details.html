@@ -1,145 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Job Details - CampusLink</title>
 
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
+
+    <script src="../js/icons.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/layout.js"></script>
+
+    <style>
+        .job-card { max-width: 800px; }
+        .job-card h1 { margin: 0 0 4px; }
+        .job-card h3 { margin: 20px 0 6px; }
+        .job-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+        .job-meta p { margin: 0; }
+        .job-card hr { border: none; border-top: 1px solid var(--border-color, #e5e7eb); margin: 20px 0; }
+        .back-btn {
+            margin-top: 24px;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color, #e5e7eb);
+            border-radius: 8px;
+            background: var(--bg-surface, #fff);
+            color: var(--text-primary, #1a1a1a);
+            cursor: pointer;
+            font: inherit;
+        }
+        .back-btn:hover { background: var(--bg-surface-alt, #f1f5f9); }
+    </style>
 </head>
 
 <body>
 
-    <div class="dashboard-container">
+    <div class="app-shell" id="app-shell"></div>
 
-        <main class="main-content">
+    <div id="page-content" style="display:none;">
+        <div class="card job-card">
 
-            <div class="card">
+            <h1 id="jobDetailsTitle">Job Details</h1>
+            <h3 id="jobDetailsCompany">Company not specified</h3>
 
-                <h1 id="jobDetailsTitle">Job Details</h1>
-
-                <h3 id="jobDetailsCompany">Company not specified</h3>
-
-                <p>
-                    <strong>Match:</strong>
-                    <span id="jobDetailsMatch">-</span>
-                </p>
-
-                <p>
-                    <strong>Location:</strong>
-                    <span id="jobDetailsLocation">-</span>
-                </p>
-
-                <p>
-                    <strong>CTC:</strong>
-                    <span id="jobDetailsCtc">-</span>
-                </p>
-
-                <p>
-                    <strong>Mode:</strong>
-                    <span id="jobDetailsMode">-</span>
-                </p>
-
-               
-
-                <hr>
-
-                <h3>Required Skills</h3>
-                <p id="jobDetailsSkills">-</p>
-
-                <h3>Job Description</h3>
-                <p id="jobDetailsDescription">-</p>
-
-                <br>
-
-                <button type="button" onclick="history.back()">
-                    ← Back to Dashboard
-                </button>
-
+            <div class="job-meta">
+                <p><strong>Match:</strong> <span id="jobDetailsMatch">-</span></p>
+                <p><strong>Location:</strong> <span id="jobDetailsLocation">-</span></p>
+                <p><strong>CTC:</strong> <span id="jobDetailsCtc">-</span></p>
+                <p><strong>Mode:</strong> <span id="jobDetailsMode">-</span></p>
             </div>
 
-        </main>
+            <hr>
 
+            <h3>Required Skills</h3>
+            <p id="jobDetailsSkills">-</p>
+
+            <h3>Job Description</h3>
+            <p id="jobDetailsDescription">-</p>
+
+            <button type="button" class="back-btn" onclick="history.back()">
+                &larr; Back to Dashboard
+            </button>
+
+        </div>
     </div>
 
     <script>
+        // ---------- App shell ----------
+        // NOTE: replace this block with the same user lookup that
+        // student-dashboard.html uses (auth.js). Common patterns are
+        // handled below; adjust if yours differs.
+        function resolveUser() {
+            try {
+                if (typeof requireAuth === "function") {
+                    const u = requireAuth("student");
+                    if (u) return u;
+                }
+                if (typeof getCurrentUser === "function") {
+                    const u = getCurrentUser();
+                    if (u) return u;
+                }
+                if (typeof getUser === "function") {
+                    const u = getUser();
+                    if (u) return u;
+                }
+                const raw = localStorage.getItem("campuslink_user") || localStorage.getItem("user");
+                if (raw) return JSON.parse(raw);
+            } catch (e) {
+                console.error("Could not resolve user:", e);
+            }
+            return null;
+        }
 
+        const user = resolveUser();
+
+        if (!user) {
+            window.location.href = "login.html";
+        } else {
+            renderShell(user, "student-dashboard.html");
+        }
+
+        // ---------- Job details ----------
+        const el = (id) => document.getElementById(id);
         const rawJob = sessionStorage.getItem("selectedRecommendedJob");
 
         if (rawJob) {
-
             try {
-
                 const job = JSON.parse(rawJob);
 
-                // Job Title
-                document.getElementById("jobDetailsTitle").textContent =
-                    job.job_title || "Job Details";
-
-                // Company
-                document.getElementById("jobDetailsCompany").textContent =
-                    job.company_name || "Company not specified";
-
-                // Match Score
-                document.getElementById("jobDetailsMatch").textContent =
-                    job.match_score != null
-                        ? job.match_score + "% Match"
-                        : "Not specified";
-
-                // Location
-                document.getElementById("jobDetailsLocation").textContent =
-                    job.location || "Not specified";
-
-                // CTC
-                document.getElementById("jobDetailsCtc").textContent =
-                    job.ctc != null
-                        ? job.ctc
-                        : "Not specified";
-
-                // Mode
-                document.getElementById("jobDetailsMode").textContent =
-                    job.mode || "Not specified";
-
-                // Application Deadline
-                
-
-                // Required Skills
-                document.getElementById("jobDetailsSkills").textContent =
-                    Array.isArray(job.required_skills)
-                        ? job.required_skills.join(", ")
-                        : job.required_skills || "Not specified";
-
-                // Job Description
-                document.getElementById("jobDetailsDescription").textContent =
+                el("jobDetailsTitle").textContent = job.job_title || "Job Details";
+                el("jobDetailsCompany").textContent = job.company_name || "Company not specified";
+                el("jobDetailsMatch").textContent =
+                    job.match_score != null ? job.match_score + "% Match" : "Not specified";
+                el("jobDetailsLocation").textContent = job.location || "Not specified";
+                el("jobDetailsCtc").textContent = job.ctc != null ? job.ctc : "Not specified";
+                el("jobDetailsMode").textContent = job.mode || "Not specified";
+                el("jobDetailsSkills").textContent = Array.isArray(job.required_skills)
+                    ? job.required_skills.join(", ")
+                    : job.required_skills || "Not specified";
+                el("jobDetailsDescription").textContent =
                     job.job_description || "No description available.";
-
             } catch (error) {
-
                 console.error("Error loading job details:", error);
-
-                document.getElementById("jobDetailsTitle").textContent =
-                    "Job Details Error";
-
-                document.getElementById("jobDetailsDescription").textContent =
-                    "Unable to load job details.";
-
+                el("jobDetailsTitle").textContent = "Job Details Error";
+                el("jobDetailsDescription").textContent = "Unable to load job details.";
             }
-
         } else {
-
-            document.getElementById("jobDetailsTitle").textContent =
-                "Job Not Found";
-
-            document.getElementById("jobDetailsCompany").textContent =
-                "Company not specified";
-
-            document.getElementById("jobDetailsDescription").textContent =
-                "No job details were found.";
-
+            el("jobDetailsTitle").textContent = "Job Not Found";
+            el("jobDetailsCompany").textContent = "Company not specified";
+            el("jobDetailsDescription").textContent = "No job details were found.";
         }
-
     </script>
 
 </body>

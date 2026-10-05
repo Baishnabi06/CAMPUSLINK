@@ -3,127 +3,124 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CampusLink — Settings</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/polish.css" />
 </head>
 
 <body>
   <div class="app-shell" id="app-shell"></div>
 
   <div id="page-content" style="display: none;">
-    <h2>Settings</h2>
-
-    <!-- Account -->
-    <div class="card settings-section">
-      <h3>Account</h3>
-      <div id="accountError" class="auth-error"></div>
-      <form id="accountForm">
-        <div class="form-group">
-          <label for="name">Full Name</label>
-          <input type="text" id="name" required />
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="text" id="email" disabled />
-        </div>
-        <div class="form-group">
-          <label>Role</label>
-          <input type="text" id="role" disabled />
-        </div>
-        <div class="form-group">
-          <label>Member Since</label>
-          <input type="text" id="createdAt" disabled />
-        </div>
-        <button type="submit">Save Name</button>
-        <span id="accountStatus" style="margin-left: 10px; color: #16a34a;"></span>
-      </form>
-    </div>
-
-    <!-- Security -->
-    <div class="card settings-section">
-      <h3>Security</h3>
-      <div id="securityError" class="auth-error"></div>
-      <form id="passwordForm">
-        <div class="form-group">
-          <label for="current_password">Current Password</label>
-          <input type="password" id="current_password" required />
-        </div>
-        <div class="form-group">
-          <label for="new_password">New Password</label>
-          <input type="password" id="new_password" minlength="8" required />
-        </div>
-        <div class="form-group">
-          <label for="confirm_password">Confirm New Password</label>
-          <input type="password" id="confirm_password" minlength="8" required />
-        </div>
-        <button type="submit">Change Password</button>
-        <span id="securityStatus" style="margin-left: 10px; color: #16a34a;"></span>
-      </form>
-    </div>
-
-    <!-- Notifications -->
-    <div class="card settings-section">
-      <h3>Notifications</h3>
-      <div class="settings-row">
+    <div class="page-shell settings-page">
+      <header class="dashboard-header">
         <div>
-          <div class="settings-row-label">Unread Notifications</div>
-          <div class="settings-row-sub" id="unreadSummary">Loading...</div>
+          <h2>Settings</h2>
+          <p class="welcome-subtitle">Manage your account, security and notifications.</p>
         </div>
-        <button id="markAllReadBtn">Mark All as Read</button>
-      </div>
-      <p class="placeholder-note" style="margin-top: 10px;">
-        Per-category notification preferences (e.g. muting specific types) aren't available yet.
-        All CampusLink notifications are in-app only — see the
-        <a href="notifications.html">Notifications page</a> for your full history.
-      </p>
-    </div>
+      </header>
 
-    <!-- Appearance -->
-    <!-- Appearance -->
-    <div class="card settings-section">
-      <h3>Appearance</h3>
-      <div class="settings-row">
-        <div>
-          <div class="settings-row-label">Theme</div>
-          <div class="settings-row-sub">Choose how CampusLink looks on this device.</div>
+      <!-- Account -->
+      <div class="card settings-section">
+        <h3>Account</h3>
+        <div id="accountError" class="auth-error"></div>
+        <form id="accountForm">
+          <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="text" id="email" disabled />
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <input type="text" id="role" disabled />
+          </div>
+          <div class="form-group">
+            <label>Member Since</label>
+            <input type="text" id="createdAt" disabled />
+          </div>
+          <button type="submit" class="btn-primary">Save Name</button>
+          <span id="accountStatus" style="margin-left: 10px; color: #16a34a;"></span>
+        </form>
+      </div>
+
+      <!-- Security -->
+      <div class="card settings-section">
+        <h3>Security</h3>
+        <div id="securityError" class="auth-error"></div>
+        <form id="passwordForm">
+          <div class="form-group">
+            <label for="current_password">Current Password</label>
+            <input type="password" id="current_password" required />
+          </div>
+          <div class="form-group">
+            <label for="new_password">New Password</label>
+            <input type="password" id="new_password" minlength="8" required />
+          </div>
+          <div class="form-group">
+            <label for="confirm_password">Confirm New Password</label>
+            <input type="password" id="confirm_password" minlength="8" required />
+          </div>
+          <button type="submit" class="btn-primary">Change Password</button>
+          <span id="securityStatus" style="margin-left: 10px; color: #16a34a;"></span>
+        </form>
+      </div>
+
+      <!-- Notifications -->
+      <div class="card settings-section">
+        <h3>Notifications</h3>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Unread Notifications</div>
+            <div class="settings-row-sub" id="unreadSummary">Loading...</div>
+          </div>
+          <button id="markAllReadBtn" class="btn-secondary">Mark All as Read</button>
         </div>
-        <div class="segmented-control" id="themeControl">
-          <button type="button" data-theme-choice="light">Light</button>
-          <button type="button" data-theme-choice="dark">Dark</button>
-          <button type="button" data-theme-choice="system">System</button>
+        <p class="placeholder-note" style="margin-top: 10px;">
+          Per-category notification preferences (e.g. muting specific types) aren't available yet.
+          All CampusLink notifications are in-app only — see the
+          <a href="notifications.html">Notifications page</a> for your full history.
+        </p>
+      </div>
+
+      <!-- Display (theme switching removed) -->
+      <div class="card settings-section">
+        <h3>Display</h3>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Compact Mode</div>
+            <div class="settings-row-sub">Reduces spacing to fit more on screen.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="compactModeToggle" />
+            <span class="toggle-slider"></span>
+          </label>
         </div>
       </div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-row-label">Compact Mode</div>
-          <div class="settings-row-sub">Reduces spacing to fit more on screen.</div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="compactModeToggle" />
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-    </div>
 
-    <!-- Account Actions -->
-    <div class="card settings-section">
-      <h3>Account Actions</h3>
-      <p class="placeholder-note">
-        Deleting your account removes your login and profile permanently. Your past
-        applications, drives, interviews, offers, and documents are not automatically
-        removed and may still reference your account.
-      </p>
-      <button id="showDeleteFormBtn" class="logout-btn">Delete Account</button>
+      <!-- Account Actions -->
+      <div class="card settings-section">
+        <h3>Account Actions</h3>
+        <p class="placeholder-note">
+          Deleting your account removes your login and profile permanently. Your past
+          applications, drives, interviews, offers, and documents are not automatically
+          removed and may still reference your account.
+        </p>
+        <button id="showDeleteFormBtn" class="btn-danger">Delete Account</button>
 
-      <div id="deleteForm" style="display:none; margin-top: 14px;">
-        <div id="deleteError" class="auth-error"></div>
-        <div class="form-group">
-          <label for="delete_password">Enter your password to confirm</label>
-          <input type="password" id="delete_password" />
+        <div id="deleteForm" style="display:none; margin-top: 14px;">
+          <div id="deleteError" class="auth-error"></div>
+          <div class="form-group">
+            <label for="delete_password">Enter your password to confirm</label>
+            <input type="password" id="delete_password" />
+          </div>
+          <button id="confirmDeleteBtn" class="btn-danger">Yes, Permanently Delete My Account</button>
+          <button id="cancelDeleteBtn" class="btn-secondary">Cancel</button>
         </div>
-        <button id="confirmDeleteBtn" class="logout-btn">Yes, Permanently Delete My Account</button>
-        <button id="cancelDeleteBtn">Cancel</button>
       </div>
     </div>
   </div>
@@ -138,7 +135,6 @@
       loadAccountInfo();
       loadNotificationSummary();
       loadAppearancePreference();
-      loadThemeControl();
     }
 
     async function loadAccountInfo() {
@@ -160,13 +156,11 @@
       const statusEl = document.getElementById("accountStatus");
       errorEl.textContent = "";
       statusEl.textContent = "";
-
       try {
         const res = await apiFetch("/api/auth/me", {
           method: "PATCH",
           body: { name: document.getElementById("name").value },
         });
-        // Keep the cached user (used by the sidebar/topbar) in sync
         setAuth(getToken(), res.data);
         statusEl.textContent = "Saved!";
         setTimeout(() => (statusEl.textContent = ""), 2000);
@@ -184,12 +178,10 @@
 
       const newPassword = document.getElementById("new_password").value;
       const confirmPassword = document.getElementById("confirm_password").value;
-
       if (newPassword !== confirmPassword) {
         errorEl.textContent = "New password and confirmation do not match.";
         return;
       }
-
       try {
         await apiFetch("/api/auth/change-password", {
           method: "PATCH",
@@ -242,7 +234,7 @@
 
     document.getElementById("cancelDeleteBtn").addEventListener("click", () => {
       document.getElementById("deleteForm").style.display = "none";
-      document.getElementById("showDeleteFormBtn").style.display = "inline-block";
+      document.getElementById("showDeleteFormBtn").style.display = "inline-flex";
       document.getElementById("delete_password").value = "";
       document.getElementById("deleteError").textContent = "";
     });
@@ -251,12 +243,10 @@
       const errorEl = document.getElementById("deleteError");
       errorEl.textContent = "";
       const password = document.getElementById("delete_password").value;
-
       if (!password) {
         errorEl.textContent = "Please enter your password.";
         return;
       }
-
       try {
         await apiFetch("/api/auth/delete-account", { method: "POST", body: { password } });
         clearAuth();
@@ -265,26 +255,6 @@
         errorEl.textContent = err.message;
       }
     });
-
-    function loadThemeControl() {
-      const saved = localStorage.getItem("campuslink_theme") || "system";
-      updateThemeButtons(saved);
-
-      document.querySelectorAll("#themeControl button").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const choice = btn.dataset.themeChoice;
-          localStorage.setItem("campuslink_theme", choice);
-          updateThemeButtons(choice);
-          applyTheme();
-        });
-      });
-    }
-
-    function updateThemeButtons(active) {
-      document.querySelectorAll("#themeControl button").forEach((btn) => {
-        btn.classList.toggle("active", btn.dataset.themeChoice === active);
-      });
-    }
   </script>
 </body>
 

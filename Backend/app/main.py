@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,11 +25,37 @@ from app.routes import (
     certifications,
     internships,
     recommendations,
+    skill_gap,
 )
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="CampusLink API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage app startup and shutdown events."""
+    # Startup
+    await connect_to_mongo()
+    
+    # Create indexes for OTP login codes. A failure here shouldn't stop the app.
+    try:
+        otps = get_db().otps
+        await otps.create_index("expires_at", expireAfterSeconds=0)  # auto-delete expired codes
+        await otps.create_index("email", unique=True)
+    except Exception:
+        logger.exception("Could not create OTP indexes")
+    
+    yield
+    
+    # Shutdown
+    await close_mongo_connection()
+
+
+app = FastAPI(
+    title="CampusLink API",
+    version="0.1.0",
+    lifespan=lifespan
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,10 +83,17 @@ app.include_router(
     prefix="/api/internships",
     tags=["internships"],
 )
+
 app.include_router(
     recommendations.router,
     prefix="/api/recommendations",
     tags=["recommendations"],
+)
+
+app.include_router(
+    skill_gap.router,
+    prefix="/api/skill-gap",
+    tags=["skill-gap"],
 )
 
 app.include_router(recruiters.router, prefix="/api/recruiters", tags=["recruiters"])
@@ -72,24 +106,6 @@ app.include_router(notifications.router, prefix="/api/notifications", tags=["not
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(officer.router, prefix="/api/officer", tags=["officer"])
 app.include_router(readiness.router, prefix="/api/readiness", tags=["readiness"])
-
-
-@app.on_event("startup")
-async def on_startup():
-    await connect_to_mongo()
-
-    # Indexes for the OTP login codes. A failure here shouldn't stop the app.
-    try:
-        otps = get_db().otps
-        await otps.create_index("expires_at", expireAfterSeconds=0)  # auto-delete expired codes
-        await otps.create_index("email", unique=True)
-    except Exception:
-        logger.exception("Could not create OTP indexes")
-
-
-@app.on_event("shutdown")
-async def on_shutdown():
-    await close_mongo_connection()
 
 
 @app.get("/")

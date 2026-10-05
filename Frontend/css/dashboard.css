@@ -83,7 +83,11 @@
   width: 18px;
   text-align: center;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
+.nav-icon .icon, .nav-icon svg { width: 18px; height: 18px; }
 
 .nav-label {
   flex-grow: 1;
@@ -162,7 +166,9 @@
 
 .notification-icon {
   font-size: 1rem;
+  display: inline-flex;
 }
+.notification-icon .icon, .notification-icon svg { width: 18px; height: 18px; }
 
 .notification-dot {
   position: absolute;
@@ -667,3 +673,155 @@ body.compact-mode .chart-grid { gap: 10px; }
   .chart-grid { grid-template-columns: 1fr; }
   .list-row { flex-direction: column; align-items: flex-start; gap: 6px; }
 }
+
+/* ============================================================
+   CampusLink — modern dashboard additions
+   Append this file's contents to the end of css/dashboard.css
+   (or link it after dashboard.css). Nothing here overrides your
+   existing rules destructively — it adds icon color tokens and
+   refines the KPI cards, section headings, and chart cards.
+   ============================================================ */
+
+/* --- Icon color tokens (light) --- */
+:root {
+  --kpi-indigo-bg: #eef2ff;  --kpi-indigo-fg: #4f46e5;
+  --kpi-blue-bg: #eff6ff;    --kpi-blue-fg: #2563eb;
+  --kpi-amber-bg: #fffbeb;   --kpi-amber-fg: #b45309;
+  --kpi-violet-bg: #f5f3ff;  --kpi-violet-fg: #7c3aed;
+  --kpi-teal-bg: #f0fdfa;    --kpi-teal-fg: #0d9488;
+  --kpi-emerald-bg: #ecfdf5; --kpi-emerald-fg: #059669;
+  --kpi-cyan-bg: #ecfeff;    --kpi-cyan-fg: #0e7490;
+}
+
+/* --- Icon color tokens (dark) --- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --kpi-indigo-bg: rgba(99,102,241,0.18);  --kpi-indigo-fg: #a5b4fc;
+    --kpi-blue-bg: rgba(37,99,235,0.18);     --kpi-blue-fg: #93c5fd;
+    --kpi-amber-bg: rgba(217,119,6,0.20);    --kpi-amber-fg: #fcd34d;
+    --kpi-violet-bg: rgba(124,58,237,0.20);  --kpi-violet-fg: #c4b5fd;
+    --kpi-teal-bg: rgba(13,148,136,0.20);    --kpi-teal-fg: #5eead4;
+    --kpi-emerald-bg: rgba(5,150,105,0.20);  --kpi-emerald-fg: #6ee7b7;
+    --kpi-cyan-bg: rgba(8,145,178,0.20);     --kpi-cyan-fg: #67e8f9;
+  }
+}
+:root[data-theme="dark"] {
+  --kpi-indigo-bg: rgba(99,102,241,0.18);  --kpi-indigo-fg: #a5b4fc;
+  --kpi-blue-bg: rgba(37,99,235,0.18);     --kpi-blue-fg: #93c5fd;
+  --kpi-amber-bg: rgba(217,119,6,0.20);    --kpi-amber-fg: #fcd34d;
+  --kpi-violet-bg: rgba(124,58,237,0.20);  --kpi-violet-fg: #c4b5fd;
+  --kpi-teal-bg: rgba(13,148,136,0.20);    --kpi-teal-fg: #5eead4;
+  --kpi-emerald-bg: rgba(5,150,105,0.20);  --kpi-emerald-fg: #6ee7b7;
+  --kpi-cyan-bg: rgba(8,145,178,0.20);     --kpi-cyan-fg: #67e8f9;
+}
+
+/* --- Icon wrapper base (used by .icon spans from icons.js) --- */
+.icon svg { width: 100%; height: 100%; display: block; }
+
+/* --- KPI cards: squircle icon badges, per-card accent colors --- */
+.kpi-card {
+  border-radius: 14px;
+  border: 1px solid var(--border-color-soft);
+}
+.kpi-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--icon-bg);
+  color: var(--accent);
+}
+.kpi-icon.icon-indigo  { background: var(--kpi-indigo-bg);  color: var(--kpi-indigo-fg); }
+.kpi-icon.icon-blue    { background: var(--kpi-blue-bg);    color: var(--kpi-blue-fg); }
+.kpi-icon.icon-amber   { background: var(--kpi-amber-bg);   color: var(--kpi-amber-fg); }
+.kpi-icon.icon-violet  { background: var(--kpi-violet-bg);  color: var(--kpi-violet-fg); }
+.kpi-icon.icon-teal    { background: var(--kpi-teal-bg);    color: var(--kpi-teal-fg); }
+.kpi-icon.icon-emerald { background: var(--kpi-emerald-bg); color: var(--kpi-emerald-fg); }
+.kpi-icon.icon-cyan    { background: var(--kpi-cyan-bg);    color: var(--kpi-cyan-fg); }
+.kpi-icon .icon { width: 22px; height: 22px; }
+
+.kpi-value { letter-spacing: -0.02em; }
+
+/* --- Section headings with an icon badge next to the title --- */
+.section-heading-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.section-icon .icon { width: 16px; height: 16px; }
+.section-heading h3 { margin: 0; }
+
+/* Card titles that carry their own icon (Readiness, Skill Gap, etc.) */
+.card > h3,
+.ai-card > h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- Chart cards: icon beside the heading --- */
+.chart-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chart-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.chart-icon .icon { width: 14px; height: 14px; }
+
+/* --- Buttons: icon + label alignment --- */
+.btn-outline, .btn-primary, .btn-secondary, .btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-outline .icon, .btn-primary .icon { width: 14px; height: 14px; }
+
+/* --- Dashboard header: refined portal badge --- */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.portal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.78rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.portal-badge .icon { width: 14px; height: 14px; }
+
+/* --- List rows: a touch more breathing room, matches new icon rhythm --- */
+.list-row-main { display: flex; align-items: center; gap: 8px; }
+
+/* --- Small meta row with inline icons (location / CTC / mode) --- */
+.meta-inline { display: inline-flex; align-items: center; gap: 4px; margin-right: 14px; }
+.meta-inline .icon { width: 13px; height: 13px; color: var(--text-muted); }
