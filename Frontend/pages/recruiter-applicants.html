@@ -7,6 +7,46 @@
 
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .applicant { border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 14px; background: #fff; }
+    .applicant-head {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 14px 16px; cursor: pointer; flex-wrap: wrap;
+    }
+    .applicant-head:hover { background: #f9fafb; }
+    .applicant-head h3 { margin: 0 0 2px; }
+    .muted { color: #6b7280; font-size: 0.85rem; }
+    .chip { padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; background: #e0e7ff; color: #3730a3; }
+    .chip.done { background: #dcfce7; color: #166534; }
+    .chip.fail { background: #fee2e2; color: #991b1b; }
+    .applicant-body { display: none; padding: 4px 16px 16px; border-top: 1px solid #e5e7eb; }
+    .applicant.open .applicant-body { display: block; }
+    .profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 20px; margin: 14px 0; }
+    .profile-grid div { font-size: 0.92rem; }
+    .section-title { margin: 18px 0 8px; font-size: 1rem; }
+    .pipeline { list-style: none; margin: 0; padding: 0; }
+    .step { display: flex; gap: 12px; padding-bottom: 14px; position: relative; }
+    .step:not(:last-child)::before { content: ""; position: absolute; left: 11px; top: 26px; bottom: 0; width: 2px; background: #e5e7eb; }
+    .dot { width: 24px; height: 24px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center;
+           font-size: 0.75rem; font-weight: 700; background: #e5e7eb; color: #6b7280; }
+    .step.passed .dot { background: #16a34a; color: #fff; }
+    .step.failed .dot { background: #dc2626; color: #fff; }
+    .step.pending .dot { background: #f59e0b; color: #fff; }
+    .step.locked { opacity: 0.55; }
+    .step-main { flex: 1; min-width: 0; }
+    .step-title { font-weight: 600; }
+    .step-status { font-size: 0.8rem; margin-left: 8px; color: #6b7280; }
+    .note { margin: 6px 0; padding: 8px 10px; background: #fef3c7; border-radius: 6px; font-size: 0.85rem; color: #92400e; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; }
+    .actions input[type=number] { width: 130px; }
+    .actions input[type=text] { flex: 1; min-width: 160px; }
+    .btn-pass, .btn-fail, .btn-go { border: 0; border-radius: 6px; padding: 7px 14px; color: #fff; cursor: pointer; }
+    .btn-pass { background: #16a34a; }
+    .btn-fail { background: #dc2626; }
+    .btn-go { background: #2563eb; }
+    .btn-pass:disabled, .btn-fail:disabled { opacity: 0.6; cursor: wait; }
+    .result { font-size: 0.85rem; color: #374151; margin-top: 4px; }
+  </style>
 </head>
 
 <body>
@@ -18,16 +58,12 @@
     <div class="card">
       <div class="form-group">
         <label for="driveSelect">Select a Drive</label>
-        <select id="driveSelect">
-          <option>Loading drives...</option>
-        </select>
+        <select id="driveSelect"><option>Loading drives...</option></select>
       </div>
     </div>
 
     <div class="card" style="margin-top: 20px;">
-      <div id="applicantsList">
-        Select a drive to view applicants.
-      </div>
+      <div id="applicantsList">Select a drive to view applicants.</div>
     </div>
   </div>
 
@@ -37,126 +73,229 @@
 
   <script>
     const user = requireAuth(["recruiter"]);
+    let currentDriveId = null;
+    let applicantsById = {};
+
+    // ---- Backend contract: change these if your routes differ ----
+    // Saves the recruiter's decision for one round: PATCH /api/applications/{id}/round
+    // round_number is 1-based; score is required (0-100) by the backend.
+    async function saveRoundResult(app, idx, result, score, feedback) {
+      return apiFetch(`/api/applications/${app.id}/round`, {
+        method: "PATCH",
+        body: {
+          round_number: app._rounds[idx].round_number ?? idx + 1,
+          status: result,
+          score,
+          feedback: feedback || null,
+        },
+      });
+    }
+    // --------------------------------------------------------------
+
+    const DEFAULT_ROUNDS = [
+      "Aptitude Test", "Technical/Coding Test", "Technical Interview",
+      "HR Interview", "Final Selection", "Offer Letter",
+    ];
 
     if (user) {
       renderShell(user, "recruiter-applicants.html");
       loadDriveOptions();
     }
 
+    function esc(v) {
+      return String(v ?? "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      }[c]));
+    }
+    const isInterview = (n) => /interview/i.test(n || "");
+    const isTest = (n) => !isInterview(n) && /(aptitude|coding|technical)/i.test(n || "");
+    const isOfferStage = (n) => /(final selection|offer)/i.test(n || "");
+
+    function normalizeRounds(app) {
+      const raw = Array.isArray(app.rounds) && app.rounds.length
+        ? app.rounds : DEFAULT_ROUNDS.map((name) => ({ name }));
+      let blocked = false;
+      return raw.map((r) => {
+        let status = String(r.status || "").toLowerCase();
+        if (!["passed", "failed", "pending", "locked"].includes(status)) status = blocked ? "locked" : "pending";
+        if (blocked && status === "pending") status = "locked";
+        if (status === "pending" || status === "failed") blocked = true;
+        return { ...r, name: r.name || r.round_name || r.round || "Round", status,
+                 score: r.score ?? r.marks ?? null, feedback: r.feedback || r.remarks || "" };
+      });
+    }
+
+    function currentLabel(rounds) {
+      const failed = rounds.find((r) => r.status === "failed");
+      if (failed) return { text: `Rejected at ${failed.name}`, cls: "fail" };
+      const pending = rounds.find((r) => r.status === "pending");
+      if (pending) return { text: `${pending.name} – pending`, cls: "" };
+      return { text: "All rounds cleared", cls: "done" };
+    }
+
+    function interviewsUrl(app, roundName) {
+      const next = roundName || (app._rounds || []).find((r) => r.status === "pending" && isInterview(r.name))?.name || "";
+      return `recruiter-interviews.html?application_id=${encodeURIComponent(app.id)}&drive_id=${encodeURIComponent(currentDriveId)}&round=${encodeURIComponent(next)}`;
+    }
+
+    function renderStep(app, r, i) {
+      const icon = r.status === "passed" ? "✓" : r.status === "failed" ? "✕" : i + 1;
+      const label = { passed: "Passed", failed: "Failed", pending: "Pending", locked: "Locked" }[r.status];
+      let body = "";
+
+      if (r.status === "passed" || r.status === "failed") {
+        if (r.score !== null && r.score !== "") body += `<div class="result"><strong>Score:</strong> ${esc(r.score)}</div>`;
+        if (r.feedback) body += `<div class="result"><strong>Feedback:</strong> ${esc(r.feedback)}</div>`;
+      } else if (r.status === "pending") {
+        {
+          if (isInterview(r.name)) {
+            body += `<div class="actions"><button class="btn-go" data-go="${esc(app.id)}" data-round-name="${esc(r.name)}">Schedule in Interviews</button></div>
+                     <div class="muted" style="margin-top:6px;">After the interview, enter the result below.</div>`;
+          } else if (isTest(r.name)) {
+            body += `<div class="note">Online test is coming soon. Enter the marks directly and move the student to the next round.</div>`;
+          }
+          body += `
+            <div class="actions" data-app="${esc(app.id)}" data-round="${i}">
+              <input type="number" min="0" placeholder="Score (0-100)" min="0" max="100" class="in-score" />
+              <input type="text" placeholder="Feedback (optional)" class="in-feedback" />
+              <button class="btn-pass" data-result="passed">Pass</button>
+              <button class="btn-fail" data-result="failed">Fail</button>
+            </div>`;
+        }
+      }
+
+      return `
+        <li class="step ${r.status}">
+          <div class="dot">${icon}</div>
+          <div class="step-main">
+            <span class="step-title">${esc(r.name)}</span><span class="step-status">${label}</span>
+            ${body}
+          </div>
+        </li>`;
+    }
+
+    function renderApplicant(app, open) {
+      const s = app.student || {};
+      const rounds = normalizeRounds(app);
+      app._rounds = rounds;
+      const chip = currentLabel(rounds);
+      const field = (k, v) => `<div><strong>${k}:</strong> ${esc(v ?? "-") || "-"}</div>`;
+
+      return `
+        <div class="applicant ${open ? "open" : ""}" id="app-${esc(app.id)}">
+          <div class="applicant-head" data-toggle="${esc(app.id)}">
+            <div>
+              <h3>${esc(s.name || "Unknown Student")}</h3>
+              <span class="muted">${esc(s.branch || "-")} · CGPA ${esc(s.cgpa ?? "-")}</span>
+            </div>
+            <span class="chip ${chip.cls}">${esc(chip.text)}</span>
+          </div>
+          <div class="applicant-body">
+            <h4 class="section-title">Profile</h4>
+            <div class="profile-grid">
+              ${field("Email", s.email)}
+              ${field("Phone", s.phone)}
+              ${field("Branch", s.branch)}
+              ${field("CGPA", s.cgpa)}
+              ${field("Backlogs", s.backlogs)}
+              ${field("Graduation year", s.graduation_year)}
+              ${field("Skills", Array.isArray(s.skills) ? s.skills.join(", ") : s.skills)}
+              ${field("Applied at", app.applied_at ? new Date(app.applied_at).toLocaleString() : "-")}
+            </div>
+            ${s.resume_url ? `<p><a href="${esc(s.resume_url)}" target="_blank" rel="noopener noreferrer">View Resume</a></p>` : ""}
+            <h4 class="section-title">Selection process</h4>
+            <ol class="pipeline">${rounds.map((r, i) => renderStep(app, r, i)).join("")}</ol>
+          </div>
+        </div>`;
+    }
+
     async function loadDriveOptions() {
       const select = document.getElementById("driveSelect");
-
       try {
         const res = await apiFetch("/api/drives/mine");
         const drives = res.data || [];
-
         if (drives.length === 0) {
           select.innerHTML = "<option>No drives created yet</option>";
-          document.getElementById("applicantsList").innerHTML =
-            "<p>No drives available.</p>";
+          document.getElementById("applicantsList").innerHTML = "<p>No drives available.</p>";
           return;
         }
-
         select.innerHTML = drives
-          .map(
-            (d) =>
-              `<option value="${d.id}">${d.job_title} at ${d.company_name}</option>`
-          )
+          .map((d) => `<option value="${esc(d.id)}">${esc(d.job_title)} at ${esc(d.company_name)}</option>`)
           .join("");
-
-        select.addEventListener("change", () => {
-          loadApplicants(select.value);
-        });
-
+        select.addEventListener("change", () => loadApplicants(select.value));
         await loadApplicants(select.value);
       } catch (error) {
         console.error("Failed to load drives:", error);
-
         select.innerHTML = "<option>Failed to load drives</option>";
-
-        document.getElementById("applicantsList").innerHTML =
-          "<p>Failed to load drives. Please try again.</p>";
+        document.getElementById("applicantsList").innerHTML = "<p>Failed to load drives. Please try again.</p>";
       }
     }
 
-    async function loadApplicants(driveId) {
+    async function loadApplicants(driveId, openId) {
       const list = document.getElementById("applicantsList");
-
+      currentDriveId = driveId;
       list.innerHTML = "<p>Loading applicants...</p>";
-
       try {
-        const res = await apiFetch(
-          `/api/applications/drive/${driveId}`
-        );
-
+        const res = await apiFetch(`/api/applications/drive/${driveId}`);
         const applicants = res.data || [];
-
+        applicantsById = {};
+        applicants.forEach((a) => (applicantsById[a.id] = a));
         if (applicants.length === 0) {
           list.innerHTML = "<p>No applicants found for this drive.</p>";
           return;
         }
-
-        list.innerHTML = applicants
-          .map(
-            (app) => `
-              <div class="card" style="margin-bottom: 15px;">
-                <h3>${app.student?.name || "Unknown Student"}</h3>
-
-                <p>
-                  <strong>Email:</strong>
-                  ${app.student?.email || "-"}
-                </p>
-
-                <p>
-                  <strong>Branch:</strong>
-                  ${app.student?.branch || "-"}
-                </p>
-
-                <p>
-                  <strong>CGPA:</strong>
-                  ${app.student?.cgpa ?? "-"}
-                </p>
-
-                <p>
-                  <strong>Status:</strong>
-                  ${app.status || "-"}
-                </p>
-
-                <p>
-                  <strong>Applied At:</strong>
-                  ${
-                    app.applied_at
-                      ? new Date(app.applied_at).toLocaleString()
-                      : "-"
-                  }
-                </p>
-
-                ${
-                  app.student?.resume_url
-                    ? `
-                      <p>
-                        <a
-                          href="${app.student.resume_url}"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          View Resume
-                        </a>
-                      </p>
-                    `
-                    : ""
-                }
-              </div>
-            `
-          )
-          .join("");
+        list.innerHTML = applicants.map((a) => renderApplicant(a, String(a.id) === String(openId))).join("");
       } catch (error) {
         console.error("Failed to load applicants:", error);
-
-        list.innerHTML =
-          "<p>Failed to load applicants. Please try again.</p>";
+        list.innerHTML = "<p>Failed to load applicants. Please try again.</p>";
       }
     }
+
+    document.addEventListener("click", async (e) => {
+      const head = e.target.closest("[data-toggle]");
+      if (head) {
+        head.parentElement.classList.toggle("open");
+        return;
+      }
+
+      const go = e.target.closest("[data-go]");
+      if (go) {
+        window.location.href = interviewsUrl(applicantsById[go.dataset.go], go.dataset.roundName);
+        return;
+      }
+
+      const btn = e.target.closest(".btn-pass, .btn-fail");
+      if (!btn) return;
+
+      const box = btn.closest(".actions");
+      const app = applicantsById[box.dataset.app];
+      const idx = Number(box.dataset.round);
+      const round = app._rounds[idx];
+      const result = btn.dataset.result;
+      const rawScore = box.querySelector(".in-score").value;
+      const score = Number(rawScore);
+      const feedback = box.querySelector(".in-feedback").value.trim();
+
+      if (rawScore === "" || Number.isNaN(score) || score < 0 || score > 100) {
+        alert("Enter a score between 0 and 100.");
+        return;
+      }
+
+      box.querySelectorAll("button").forEach((b) => (b.disabled = true));
+      try {
+        await saveRoundResult(app, idx, result, score, feedback);
+
+        const next = app._rounds[idx + 1];
+        if (result === "passed" && next && isInterview(next.name)) {
+          window.location.href = interviewsUrl(app, next.name); // interview rounds are handled on the Interviews page
+          return;
+        }
+        await loadApplicants(currentDriveId, app.id);
+      } catch (err) {
+        box.querySelectorAll("button").forEach((b) => (b.disabled = false));
+        alert("Could not save the result: " + err.message);
+      }
+    });
   </script>
 </body>
 </html>

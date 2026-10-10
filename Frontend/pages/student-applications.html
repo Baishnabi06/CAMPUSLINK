@@ -5,6 +5,32 @@
   <title>CampusLink — My Applications</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .app-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+    .app-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+    .muted { color: #6b7280; font-size: 0.85rem; }
+    .pipeline { list-style: none; margin: 16px 0 0; padding: 0; }
+    .step { display: flex; gap: 12px; padding-bottom: 14px; position: relative; }
+    .step:not(:last-child)::before {
+      content: ""; position: absolute; left: 11px; top: 26px; bottom: 0; width: 2px; background: #e5e7eb;
+    }
+    .dot {
+      width: 24px; height: 24px; border-radius: 50%; flex: none; display: flex;
+      align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;
+      background: #e5e7eb; color: #6b7280;
+    }
+    .step.passed .dot { background: #16a34a; color: #fff; }
+    .step.failed .dot { background: #dc2626; color: #fff; }
+    .step.pending .dot { background: #f59e0b; color: #fff; }
+    .step.locked { opacity: 0.6; }
+    .step-title { font-weight: 600; }
+    .step-status { font-size: 0.8rem; margin-left: 8px; }
+    .step.passed .step-status { color: #16a34a; }
+    .step.failed .step-status { color: #dc2626; }
+    .step.pending .step-status { color: #b45309; }
+    .note { margin-top: 6px; padding: 8px 10px; background: #fef3c7; border-radius: 6px; font-size: 0.85rem; color: #92400e; }
+    .feedback { margin-top: 6px; font-size: 0.85rem; color: #374151; }
+  </style>
 </head>
 <body>
   <div class="app-shell" id="app-shell"></div>
@@ -26,6 +52,82 @@
       loadApplications();
     }
 
+    // Used only if the backend does not send a rounds array for an application.
+    const DEFAULT_ROUNDS = [
+      "Aptitude Test",
+      "Technical/Coding Test",
+      "Technical Interview",
+      "HR Interview",
+      "Final Selection",
+      "Offer Letter",
+    ];
+
+    // Rounds that will become online tests later. For now the recruiter enters marks.
+    const TEST_ROUNDS = ["aptitude", "coding", "technical/coding", "technical test"];
+
+    function esc(v) {
+      return String(v ?? "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      }[c]));
+    }
+
+    function isTestRound(name) {
+      const n = String(name || "").toLowerCase();
+      if (n.includes("interview")) return false;
+      return TEST_ROUNDS.some((t) => n.includes(t));
+    }
+
+    function normalizeRounds(a) {
+      const raw = Array.isArray(a.rounds) && a.rounds.length
+        ? a.rounds
+        : DEFAULT_ROUNDS.map((name) => ({ name }));
+
+      let blocked = false; // once a round is pending/failed, later ones stay locked
+      return raw.map((r) => {
+        const name = r.name || r.round_name || r.round || "Round";
+        let status = String(r.status || "").toLowerCase();
+        if (!["passed", "failed", "pending", "locked"].includes(status)) {
+          status = blocked ? "locked" : "pending";
+        }
+        if (blocked && status === "pending") status = "locked";
+        if (status === "pending" || status === "failed") blocked = true;
+        return {
+          name,
+          status,
+          score: r.score ?? r.marks ?? null,
+          feedback: r.feedback || r.remarks || "",
+        };
+      });
+    }
+
+    function renderStep(r, i) {
+      const icon = r.status === "passed" ? "✓" : r.status === "failed" ? "✕" : i + 1;
+      const label = { passed: "Passed", failed: "Not cleared", pending: "In progress", locked: "Locked" }[r.status];
+      const decided = r.status === "passed" || r.status === "failed";
+
+      let extra = "";
+      if (decided) {
+        if (r.score !== null && r.score !== "") {
+          extra += `<div class="feedback"><strong>Score:</strong> ${esc(r.score)}</div>`;
+        }
+        if (r.feedback) {
+          extra += `<div class="feedback"><strong>Recruiter feedback:</strong> ${esc(r.feedback)}</div>`;
+        }
+      } else if (isTestRound(r.name)) {
+        extra += `<div class="note">Online test is coming soon. For now, the recruiter will enter your marks directly and move you to the next round.</div>`;
+      }
+
+      return `
+        <li class="step ${r.status}">
+          <div class="dot">${icon}</div>
+          <div>
+            <span class="step-title">${esc(r.name)}</span>
+            <span class="step-status">${label}</span>
+            ${extra}
+          </div>
+        </li>`;
+    }
+
     async function loadApplications() {
       const listEl = document.getElementById("applicationsList");
       try {
@@ -38,21 +140,23 @@
         }
 
         listEl.innerHTML = apps
-          .map(
-            (a) => `
-            <div class="drive-item">
-              <div>
-                <strong>${a.drive?.job_title || "Unknown role"}</strong>
-                at ${a.drive?.company_name || "Unknown company"}
-                — CTC ${a.drive?.ctc ?? "-"} LPA
-                <br />
-                <span style="color:#6b7280; font-size:0.85rem;">
-                  Applied on ${new Date(a.applied_at).toLocaleDateString()}
-                </span>
+          .map((a) => {
+            const rounds = normalizeRounds(a);
+            return `
+            <div class="app-card">
+              <div class="app-head">
+                <div>
+                  <strong>${esc(a.drive?.job_title || "Unknown role")}</strong>
+                  at ${esc(a.drive?.company_name || "Unknown company")}
+                  — CTC ${esc(a.drive?.ctc ?? "-")} LPA
+                  <br />
+                  <span class="muted">Applied on ${new Date(a.applied_at).toLocaleDateString()}</span>
+                </div>
+                <span class="badge">${esc(a.status)}</span>
               </div>
-              <span class="badge">${a.status}</span>
-            </div>`
-          )
+              <ol class="pipeline">${rounds.map(renderStep).join("")}</ol>
+            </div>`;
+          })
           .join("");
       } catch (err) {
         listEl.textContent = "Failed to load applications: " + err.message;

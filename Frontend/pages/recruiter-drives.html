@@ -5,6 +5,25 @@
   <title>CampusLink — My Drives</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .pill { display:inline-block; padding:2px 10px; border-radius:999px; font-size:0.78rem; font-weight:600; }
+    .pill-pending { background:#fef3c7; color:#92400e; }
+    .pill-passed  { background:#dcfce7; color:#166534; }
+    .pill-failed  { background:#fee2e2; color:#991b1b; }
+    .pill-locked  { background:#e5e7eb; color:#4b5563; }
+    .applicants-panel { margin-top:12px; border-top:1px solid #e5e7eb; padding-top:12px; }
+    .applicant-card { border:1px solid #e5e7eb; border-radius:8px; padding:12px; margin-bottom:12px; }
+    .round-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:8px; padding:8px; background:#f9fafb; border-radius:6px; }
+    .round-row input[type=number] { width:90px; }
+    .round-row input[type=text] { flex:1; min-width:160px; }
+    .muted { color:#6b7280; font-size:0.85rem; }
+    .ok-msg { color:#16a34a; }
+    .round-options { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:8px; margin:6px 0; }
+    .round-options label { display:flex; align-items:center; gap:10px; margin:0; padding:10px 12px;
+      border:1px solid #e5e7eb; border-radius:8px; cursor:pointer; background:#fff; }
+    .round-options label:hover { background:#f3f4f6; }
+    .round-options input[type=checkbox] { width:18px !important; height:18px; padding:0 !important; margin:0; flex:none; }
+  </style>
 </head>
 <body>
   <div class="app-shell" id="app-shell"></div>
@@ -47,6 +66,11 @@
         <div class="form-group">
           <label for="required_certifications">Required Certifications (comma-separated)</label>
           <input type="text" id="required_certifications" />
+        </div>
+        <div class="form-group">
+          <label>Selection Process</label>
+          <div id="selectionRounds" class="round-options"></div>
+          <small class="muted">Tick the rounds for this drive. Students go through them in the order shown and must pass each one to unlock the next. Changing this only affects new applications.</small>
         </div>
         <div class="form-group">
           <label for="ctc">CTC (LPA)</label>
@@ -93,16 +117,63 @@
   <script>
     const user = requireAuth(["recruiter"]);
     let editingDriveId = null;
+    let drivesById = {};
+    const openPanels = new Set(); // drive ids whose applicants panel is open
+
+    // Canonical order of the selection process. Ticked rounds are always saved in this order.
+    const ROUND_OPTIONS = [
+      "Aptitude Test",
+      "Technical/Coding Test",
+      "Technical Interview",
+      "HR Interview",
+      "Final Selection",
+      "Offer Letter",
+    ];
+    const DEFAULT_ROUNDS = ["Technical Interview", "HR Interview"];
+
+    // Draws the checkboxes. `checked` = names to tick; `extras` = custom round
+    // names from older drives that aren't in ROUND_OPTIONS (kept so they aren't lost on edit).
+    function renderRoundOptions(checked = DEFAULT_ROUNDS, extras = []) {
+      const all = [...ROUND_OPTIONS, ...extras.filter((n) => !ROUND_OPTIONS.includes(n))];
+      document.getElementById("selectionRounds").innerHTML = all
+        .map(
+          (name) => `
+          <label>
+            <input type="checkbox" name="selection_round" value="${esc(name)}"
+                   ${checked.includes(name) ? "checked" : ""} />
+            <span>${esc(name)}</span>
+          </label>`
+        )
+        .join("");
+    }
+
+    function readRounds() {
+      return Array.from(document.querySelectorAll('input[name="selection_round"]:checked')).map(
+        (el) => el.value
+      );
+    }
 
     if (user) {
       renderShell(user, "recruiter-drives.html");
+      renderRoundOptions();
       loadDrives();
+    }
+
+    // ---------- helpers ----------
+    function esc(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
 
     function toList(value) {
       return value.split(",").map((v) => v.trim()).filter((v) => v.length > 0);
     }
 
+    // ---------- drive form ----------
     function readForm() {
       return {
         company_name: document.getElementById("company_name").value,
@@ -113,6 +184,7 @@
         max_backlogs: parseInt(document.getElementById("max_backlogs").value, 10) || 0,
         required_skills: toList(document.getElementById("required_skills").value),
         required_certifications: toList(document.getElementById("required_certifications").value),
+        selection_rounds: readRounds(),
         ctc: parseFloat(document.getElementById("ctc").value),
         openings: parseInt(document.getElementById("openings").value, 10) || 1,
         application_deadline: document.getElementById("application_deadline").value,
@@ -131,6 +203,10 @@
       document.getElementById("max_backlogs").value = drive.max_backlogs;
       document.getElementById("required_skills").value = (drive.required_skills || []).join(", ");
       document.getElementById("required_certifications").value = (drive.required_certifications || []).join(", ");
+      const saved = (drive.selection_rounds && drive.selection_rounds.length)
+        ? drive.selection_rounds
+        : DEFAULT_ROUNDS;
+      renderRoundOptions(saved, saved);
       document.getElementById("ctc").value = drive.ctc;
       document.getElementById("openings").value = drive.openings;
       document.getElementById("application_deadline").value = drive.application_deadline.slice(0, 10);
@@ -141,6 +217,7 @@
 
     function resetForm() {
       document.getElementById("driveForm").reset();
+      renderRoundOptions();
       editingDriveId = null;
       document.getElementById("formTitle").textContent = "Create a New Drive";
       document.getElementById("submitBtn").textContent = "Create Drive";
@@ -155,6 +232,11 @@
       errorEl.textContent = "";
       const payload = readForm();
 
+      if (payload.selection_rounds.length === 0) {
+        errorEl.textContent = "Please tick at least one round in the Selection Process.";
+        return;
+      }
+
       try {
         if (editingDriveId) {
           await apiFetch(`/api/drives/${editingDriveId}`, { method: "PUT", body: payload });
@@ -168,11 +250,14 @@
       }
     });
 
+    // ---------- drives list ----------
     async function loadDrives() {
       const listEl = document.getElementById("drivesList");
       try {
         const res = await apiFetch("/api/drives/mine");
         const drives = res.data;
+        drivesById = {};
+        drives.forEach((d) => (drivesById[d.id] = d));
 
         if (drives.length === 0) {
           listEl.innerHTML = "<p>You haven't created any drives yet.</p>";
@@ -180,26 +265,41 @@
         }
 
         listEl.innerHTML = drives
-          .map(
-            (d) => `
-            <div class="drive-item">
-              <div>
-                <strong>${d.job_title}</strong> at ${d.company_name}
-                — CTC ${d.ctc} LPA — <span class="badge">${d.status}</span>
+          .map((d) => {
+            const rounds = (d.selection_rounds && d.selection_rounds.length)
+              ? d.selection_rounds.join(" → ")
+              : "Technical Interview → HR Interview (default)";
+            return `
+            <div class="drive-item" style="flex-direction:column; align-items:stretch;">
+              <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <div>
+                  <strong>${esc(d.job_title)}</strong> at ${esc(d.company_name)}
+                  — CTC ${esc(d.ctc)} LPA — <span class="badge">${esc(d.status)}</span>
+                  <div class="muted">Rounds: ${esc(rounds)}</div>
+                </div>
+                <div class="drive-actions">
+                  <button onclick="toggleApplicants('${d.id}')">Applicants</button>
+                  <button onclick="editDrive('${d.id}')">Edit</button>
+                  <button onclick="deleteDrive('${d.id}')" class="logout-btn">Delete</button>
+                </div>
               </div>
-              <div class="drive-actions">
-                <button onclick='editDrive(${JSON.stringify(d).replace(/'/g, "&apos;")})'>Edit</button>
-                <button onclick="deleteDrive('${d.id}')" class="logout-btn">Delete</button>
-              </div>
-            </div>`
-          )
+              <div id="applicants-${d.id}" class="applicants-panel" style="display:none;"></div>
+            </div>`;
+          })
           .join("");
+
+        // re-open panels that were open before a refresh
+        openPanels.forEach((id) => {
+          if (drivesById[id]) loadApplicants(id);
+        });
       } catch (err) {
         listEl.textContent = "Failed to load drives: " + err.message;
       }
     }
 
-    function editDrive(drive) {
+    function editDrive(id) {
+      const drive = drivesById[id];
+      if (!drive) return;
       fillForm(drive);
       editingDriveId = drive.id;
       document.getElementById("formTitle").textContent = "Edit Drive";
@@ -212,9 +312,121 @@
       if (!confirm("Delete this drive? This cannot be undone.")) return;
       try {
         await apiFetch(`/api/drives/${id}`, { method: "DELETE" });
+        openPanels.delete(id);
         loadDrives();
       } catch (err) {
         alert("Failed to delete: " + err.message);
+      }
+    }
+
+    // ---------- applicants + round evaluation ----------
+    function toggleApplicants(driveId) {
+      const panel = document.getElementById(`applicants-${driveId}`);
+      if (openPanels.has(driveId)) {
+        openPanels.delete(driveId);
+        panel.style.display = "none";
+        return;
+      }
+      openPanels.add(driveId);
+      loadApplicants(driveId);
+    }
+
+    async function loadApplicants(driveId) {
+      const panel = document.getElementById(`applicants-${driveId}`);
+      if (!panel) return;
+      panel.style.display = "block";
+      panel.innerHTML = "Loading applicants...";
+      try {
+        const res = await apiFetch(`/api/applications/drive/${driveId}`);
+        const apps = res.data;
+        if (apps.length === 0) {
+          panel.innerHTML = '<p class="muted">No applications yet.</p>';
+          return;
+        }
+        panel.innerHTML = apps.map((a) => renderApplicant(a, driveId)).join("");
+      } catch (err) {
+        panel.innerHTML = `<p class="auth-error">Failed to load applicants: ${esc(err.message)}</p>`;
+      }
+    }
+
+    function renderApplicant(a, driveId) {
+      const s = a.student || {};
+      const resume = s.resume_url
+        ? ` | <a href="${esc(s.resume_url)}" target="_blank" rel="noopener">Resume</a>`
+        : "";
+      const rounds = (a.rounds || []).map((r) => renderRound(a, r, driveId)).join("");
+      return `
+        <div class="applicant-card">
+          <div>
+            <strong>${esc(s.name || "Unknown")}</strong>
+            <span class="muted">(${esc(s.email || "-")})</span>
+            — <span class="badge">${esc(a.status)}</span>
+          </div>
+          <div class="muted">Branch: ${esc(s.branch || "-")} | CGPA: ${esc(s.cgpa ?? "-")}${resume}</div>
+          ${rounds}
+          <div id="msg-${a.id}" class="muted" style="margin-top:6px;"></div>
+        </div>`;
+    }
+
+    function renderRound(a, r, driveId) {
+      const head = `
+        <strong>Round ${esc(r.round_number)}: ${esc(r.name)}</strong>
+        <span class="pill pill-${esc(r.status)}">${esc(r.status)}</span>`;
+
+      if (r.status === "pending") {
+        const key = `${a.id}-${r.round_number}`;
+        const isTest = ["Aptitude Test", "Technical/Coding Test"].includes(r.name);
+        const note = isTest
+          ? `<div class="muted" style="flex-basis:100%;">🚧 Online test coming soon (feature under progress). For now, enter the marks directly and pass or fail the student.</div>`
+          : "";
+        return `
+          <div class="round-row">
+            ${note}
+            ${head}
+            <input type="number" id="score-${key}" min="0" max="100" placeholder="Score (0-100)" />
+            <input type="text" id="fb-${key}" placeholder="Feedback (optional)" />
+            <button onclick="evaluateRound('${a.id}', ${r.round_number}, 'passed', '${driveId}')">Pass</button>
+            <button class="logout-btn" onclick="evaluateRound('${a.id}', ${r.round_number}, 'failed', '${driveId}')">Fail</button>
+          </div>`;
+      }
+
+      const detail = (r.score !== null && r.score !== undefined)
+        ? `<span class="muted">Score: ${esc(r.score)}${r.feedback ? " — " + esc(r.feedback) : ""}</span>`
+        : "";
+      return `<div class="round-row">${head} ${detail}</div>`;
+    }
+
+    async function evaluateRound(appId, roundNumber, status, driveId) {
+      const key = `${appId}-${roundNumber}`;
+      const msgEl = document.getElementById(`msg-${appId}`);
+      const scoreRaw = document.getElementById(`score-${key}`).value;
+      const feedback = document.getElementById(`fb-${key}`).value.trim();
+
+      msgEl.className = "auth-error";
+      if (scoreRaw === "" || isNaN(parseFloat(scoreRaw))) {
+        msgEl.textContent = "Please enter a score between 0 and 100.";
+        return;
+      }
+      const score = parseFloat(scoreRaw);
+      if (score < 0 || score > 100) {
+        msgEl.textContent = "Score must be between 0 and 100.";
+        return;
+      }
+      if (!confirm(`Mark this round as ${status.toUpperCase()}? This cannot be changed later.`)) return;
+
+      try {
+        await apiFetch(`/api/applications/${appId}/round`, {
+          method: "PATCH",
+          body: {
+            round_number: roundNumber,
+            status: status,
+            score: score,
+            feedback: feedback || null,
+          },
+        });
+        await loadApplicants(driveId);
+      } catch (err) {
+        msgEl.textContent = err.message;
       }
     }
   </script>

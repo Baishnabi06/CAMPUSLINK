@@ -5,13 +5,32 @@
   <title>CampusLink — Placement Drives</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .pill { display:inline-block; padding:2px 10px; border-radius:999px; font-size:0.78rem; font-weight:600; }
+    .pill-pending { background:#fef3c7; color:#92400e; }
+    .pill-passed  { background:#dcfce7; color:#166534; }
+    .pill-failed  { background:#fee2e2; color:#991b1b; }
+    .pill-locked  { background:#e5e7eb; color:#4b5563; }
+    .app-item { border:1px solid #e5e7eb; border-radius:8px; padding:12px; margin-bottom:12px; }
+    .pipeline { display:flex; flex-wrap:wrap; align-items:stretch; gap:8px; margin-top:10px; }
+    .step { flex:1; min-width:150px; border:1px solid #e5e7eb; border-radius:6px; padding:8px; background:#f9fafb; }
+    .step small { display:block; color:#6b7280; margin-top:4px; }
+    .muted { color:#6b7280; font-size:0.85rem; }
+  </style>
 </head>
 <body>
   <div class="app-shell" id="app-shell"></div>
 
   <div id="page-content" style="display: none;">
     <h2>Placement Drives</h2>
+
     <div class="card">
+      <h3>My Applications</h3>
+      <div id="myApplications">Loading...</div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <h3>Open Drives</h3>
       <div id="drivesList">Loading...</div>
     </div>
   </div>
@@ -28,16 +47,80 @@
       init();
     }
 
+    // Rounds whose online test feature isn't built yet
+    const TEST_ROUNDS = ["Aptitude Test", "Technical/Coding Test"];
+    function isTestRound(name) {
+      return TEST_ROUNDS.includes(name);
+    }
+
+    function esc(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     async function init() {
-      try {
-        const myApps = await apiFetch("/api/applications/mine");
-        appliedDriveIds = new Set(myApps.data.map((a) => a.drive_id));
-      } catch (err) {
-        // Non-fatal — just means "already applied" checks won't be shown
-      }
+      await loadMyApplications();
       loadDrives();
     }
 
+    // ---------- My Applications + round pipeline ----------
+    async function loadMyApplications() {
+      const el = document.getElementById("myApplications");
+      try {
+        const res = await apiFetch("/api/applications/mine");
+        const apps = res.data;
+        appliedDriveIds = new Set(apps.map((a) => a.drive_id));
+
+        if (apps.length === 0) {
+          el.innerHTML = "<p>You haven't applied to any drives yet.</p>";
+          return;
+        }
+
+        el.innerHTML = apps.map(renderApplication).join("");
+      } catch (err) {
+        // Non-fatal for the drives list below
+        el.textContent = "Failed to load your applications: " + err.message;
+      }
+    }
+
+    function renderApplication(a) {
+      const d = a.drive;
+      const title = d
+        ? `<strong>${esc(d.job_title)}</strong> at ${esc(d.company_name)} — CTC ${esc(d.ctc)} LPA`
+        : "<strong>Drive no longer available</strong>";
+
+      const steps = (a.rounds || [])
+        .map((r) => {
+          let extra = "";
+          if (r.score !== null && r.score !== undefined) extra += `Score: ${esc(r.score)}`;
+          if (r.feedback) extra += `${extra ? "<br />" : ""}${esc(r.feedback)}`;
+          if (!extra && r.status === "pending") extra = "Awaiting evaluation";
+          if (!extra && r.status === "locked") extra = "Unlocks after previous round";
+          if (isTestRound(r.name) && (r.status === "pending" || r.status === "locked")) {
+            extra += `${extra ? "<br />" : ""}🚧 Online test coming soon (feature under progress). For now, the recruiter will enter your marks directly.`;
+          }
+          return `
+            <div class="step">
+              <strong>${esc(r.round_number)}. ${esc(r.name)}</strong><br />
+              <span class="pill pill-${esc(r.status)}">${esc(r.status)}</span>
+              <small>${extra}</small>
+            </div>`;
+        })
+        .join("");
+
+      return `
+        <div class="app-item">
+          <div>${title} — <span class="badge">${esc(a.status)}</span></div>
+          <div class="muted">Applied on ${new Date(a.applied_at).toLocaleDateString()}</div>
+          <div class="pipeline">${steps}</div>
+        </div>`;
+    }
+
+    // ---------- Open drives ----------
     async function loadDrives() {
       const listEl = document.getElementById("drivesList");
       try {
@@ -52,15 +135,20 @@
         listEl.innerHTML = drives
           .map((d) => {
             const alreadyApplied = appliedDriveIds.has(d.id);
+            const rounds = (d.selection_rounds && d.selection_rounds.length)
+              ? d.selection_rounds.join(" → ")
+              : "Technical Interview → HR Interview";
             return `
               <div class="drive-item" style="flex-direction: column; align-items: stretch;">
                 <div>
-                  <strong>${d.job_title}</strong> at ${d.company_name} — CTC ${d.ctc} LPA
+                  <strong>${esc(d.job_title)}</strong> at ${esc(d.company_name)} — CTC ${esc(d.ctc)} LPA
                   <br />
-                  <span style="color:#6b7280; font-size:0.85rem;">
-                    Deadline: ${new Date(d.application_deadline).toLocaleDateString()} | Mode: ${d.mode} | Openings: ${d.openings}
+                  <span class="muted">
+                    Deadline: ${new Date(d.application_deadline).toLocaleDateString()} | Mode: ${esc(d.mode)} | Openings: ${esc(d.openings)}
                   </span>
-                  <p style="margin: 6px 0;">${d.job_description}</p>
+                  <br />
+                  <span class="muted">Selection process: ${esc(rounds)}</span>
+                  <p style="margin: 6px 0;">${esc(d.job_description)}</p>
                 </div>
                 <div id="eligibility-${d.id}" class="auth-error"></div>
                 <div class="drive-actions" style="align-self: flex-end;">
@@ -100,10 +188,13 @@
       const el = document.getElementById(`eligibility-${driveId}`);
       try {
         await apiFetch(`/api/applications/apply/${driveId}`, { method: "POST" });
-        appliedDriveIds.add(driveId);
-        el.style.color = "#16a34a";
-        el.textContent = "Application submitted!";
-        loadDrives();
+        await loadMyApplications(); // refreshes applied set + pipeline
+        await loadDrives();
+        const msg = document.getElementById(`eligibility-${driveId}`);
+        if (msg) {
+          msg.style.color = "#16a34a";
+          msg.textContent = "Application submitted!";
+        }
       } catch (err) {
         el.style.color = "#dc2626";
         el.textContent = err.message;

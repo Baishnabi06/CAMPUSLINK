@@ -11,6 +11,7 @@
 
   <div id="page-content" style="display: none;">
     <h2>Schedule an Interview</h2>
+    <div id="roundBanner" style="display:none; margin-bottom:12px; padding:10px 12px; background:#e0e7ff; color:#3730a3; border-radius:8px; font-size:0.9rem;"></div>
     <div class="card">
       <div class="form-group">
         <label for="driveSelect">Drive</label>
@@ -74,6 +75,20 @@
     const user = requireAuth(["recruiter"]);
     let lastPayload = null;
 
+    // Set when the recruiter arrives from the Applicants page after passing a round.
+    const params = new URLSearchParams(window.location.search);
+    const preDriveId = params.get("drive_id");
+    const preApplicationId = params.get("application_id");
+    const preRound = params.get("round");
+
+    if (preApplicationId) {
+      const banner = document.getElementById("roundBanner");
+      banner.textContent = preRound
+        ? `The candidate has cleared the previous round. Schedule their ${preRound} below.`
+        : "The candidate has cleared the previous round. Schedule their next interview below.";
+      banner.style.display = "block";
+    }
+
     const modeEl = document.getElementById("mode");
     const venueInput = document.getElementById("venue_or_link");
 
@@ -111,19 +126,33 @@
         select.innerHTML = drives
           .map((d) => `<option value="${d.id}">${d.job_title} at ${d.company_name}</option>`)
           .join("");
+
+        // Pre-select the drive we were sent here for.
+        let preselect = null;
+        if (preDriveId && drives.some((d) => String(d.id) === String(preDriveId))) {
+          select.value = preDriveId;
+          preselect = preApplicationId;
+        }
+
         select.addEventListener("change", () => loadApplicantOptions(select.value));
-        loadApplicantOptions(select.value);
+        loadApplicantOptions(select.value, preselect);
       } catch (err) {
         select.innerHTML = "<option>Failed to load drives</option>";
       }
     }
 
-    async function loadApplicantOptions(driveId) {
+    async function loadApplicantOptions(driveId, preselectId) {
       const select = document.getElementById("applicantSelect");
       select.innerHTML = "<option>Loading...</option>";
       try {
         const res = await apiFetch(`/api/applications/drive/${driveId}`);
-        const eligible = res.data.filter((a) => a.status === "applied" || a.status === "shortlisted");
+        // The candidate we were sent for is always listed, whatever their overall status is.
+        const eligible = res.data.filter(
+          (a) =>
+            a.status === "applied" ||
+            a.status === "shortlisted" ||
+            (preselectId && String(a.id) === String(preselectId))
+        );
         if (eligible.length === 0) {
           select.innerHTML = "<option value=''>No applied/shortlisted candidates</option>";
           return;
@@ -131,6 +160,7 @@
         select.innerHTML = eligible
           .map((a) => `<option value="${a.id}">${a.student.name} (${a.status})</option>`)
           .join("");
+        if (preselectId) select.value = preselectId;
       } catch (err) {
         select.innerHTML = "<option>Failed to load candidates</option>";
       }
