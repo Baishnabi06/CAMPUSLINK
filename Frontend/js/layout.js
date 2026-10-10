@@ -122,7 +122,7 @@ function renderShell(user, activePage) {
         <div class="brand-mark">CL</div>
 
         <div class="brand-copy">
-          <span class="brand-name">CampusLink</span>
+          <span class="brand-name">HunarLoop</span>
           <span class="brand-subtitle">Placement Intelligence</span>
         </div>
       </div>
