@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,17 +57,22 @@
     }
 
     /* =====================================================================
-       Left: brand panel with student characters
+       Left: brand panel with animated 3D document stack
        ===================================================================== */
 
     .lp-brand {
-      position: relative;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      min-height: 620px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       padding: 44px 56px 0;
       color: #fff;
-      background: var(--ink);
+      background:
+        radial-gradient(ellipse at 50% 75%, rgba(37, 99, 235, 0.24), transparent 55%),
+        var(--ink);
     }
 
     .lp-brand-top {
@@ -95,7 +101,7 @@
       text-wrap: balance;
     }
 
-    /* Subtle campus-inspired backdrop beneath the character group */
+    /* Perspective floor beneath the documents */
     .lp-floor {
       position: absolute;
       left: -25%;
@@ -114,6 +120,8 @@
     }
 
     .lp-scene {
+      --mx: 0;
+      --my: 0;
       position: relative;
       z-index: 1;
       flex: 1;
@@ -122,15 +130,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .lp-students {
-      display: block;
-      width: min(100%, 600px);
-      max-height: 430px;
-      overflow: visible;
+      perspective: 1100px;
+      perspective-origin: 50% 45%;
     }
 
     .lp-shadow {
@@ -144,15 +145,215 @@
       filter: blur(4px);
     }
 
-    .student { transform-box: fill-box; transform-origin: center bottom; }
-    .student .head { transform-box: fill-box; transform-origin: center bottom; transition: transform 260ms ease; }
-    .student .smile { opacity: 0; transition: opacity 220ms ease; }
-    .student .rest-mouth { opacity: 1; transition: opacity 220ms ease; }
-    .lp-scene.is-happy .student .head { transform: translateY(-3px) rotate(-2deg); }
-    .lp-scene.is-happy .student:nth-of-type(even) .head { transform: translateY(-3px) rotate(2deg); }
-    .lp-scene.is-happy .student .smile { opacity: 1; }
-    .lp-scene.is-happy .student .rest-mouth { opacity: 0; }
-    .pupil { transition: transform 70ms linear; }
+    .lp-stack {
+      position: relative;
+      width: min(340px, 82%);
+      height: 370px;
+      transform-style: preserve-3d;
+      transform:
+        rotateX(calc(4deg + var(--my) * -3deg))
+        rotateY(calc(-12deg + var(--mx) * 7deg))
+        translateY(-8px);
+      transition: transform 180ms ease-out;
+      animation: lp-bob 5s ease-in-out infinite;
+    }
+
+    .lp-sheet {
+      position: absolute;
+      width: 260px;
+      height: 325px;
+      left: 50%;
+      top: 50%;
+      padding: 25px 23px;
+      overflow: hidden;
+      border: 1px solid rgba(26, 63, 168, 0.12);
+      border-radius: 13px;
+      background: #fff;
+      color: var(--ink);
+      box-shadow:
+        0 3px 0 rgba(10, 27, 68, 0.06),
+        0 15px 30px rgba(0, 0, 0, 0.16);
+      transform-style: preserve-3d;
+    }
+
+    .lp-sheet--back {
+      z-index: 1;
+      background: #dce8ff;
+      transform: translate(-55%, -48%) rotate(-13deg) translateZ(-65px);
+      animation: lp-back-float 5s ease-in-out infinite;
+    }
+
+    .lp-sheet--mid {
+      z-index: 2;
+      background: #f5f7ff;
+      transform: translate(-43%, -51%) rotate(10deg) translateZ(-25px);
+      animation: lp-mid-float 5s ease-in-out infinite;
+      animation-delay: -1.5s;
+    }
+
+    .lp-sheet--front {
+      z-index: 3;
+      transform: translate(-52%, -49%) rotate(-2deg) translateZ(35px);
+      animation: lp-front-float 5s ease-in-out infinite;
+      animation-delay: -0.7s;
+    }
+
+    .sh-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+
+    .sh-avatar {
+      display: block;
+      flex: 0 0 35px;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffc233, #ffdb7a);
+      box-shadow: inset 0 0 0 3px rgba(255, 194, 51, 0.25);
+    }
+
+    .sh-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      width: 100%;
+    }
+
+    .sh-lines i {
+      display: block;
+      height: 7px;
+      border-radius: 5px;
+      background: #d8e0ef;
+    }
+
+    .sh-lines .w100 { width: 100%; }
+    .sh-lines .w85 { width: 85%; }
+    .sh-lines .w75 { width: 75%; }
+    .sh-lines .w60 { width: 60%; }
+    .sh-lines .w50 { width: 50%; }
+    .sh-lines .w40 { width: 40%; }
+
+    .sh-chips {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 23px;
+    }
+
+    .sh-chips i {
+      display: block;
+      width: 48px;
+      height: 18px;
+      border-radius: 6px;
+      background: #dbeafe;
+      border: 1px solid #bfdbfe;
+    }
+
+    .sh-chips i:nth-child(2) {
+      background: #fef3c7;
+      border-color: #fde68a;
+    }
+
+    .sh-chips i:nth-child(3) {
+      background: #dcfce7;
+      border-color: #bbf7d0;
+    }
+
+    .sh-progress {
+      height: 8px;
+      margin-top: 25px;
+      overflow: hidden;
+      border-radius: 6px;
+      background: #e7ecf6;
+    }
+
+    .sh-progress b {
+      display: block;
+      width: 72%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--blue);
+    }
+
+    .sh-cal {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 7px;
+      margin: 24px 0;
+    }
+
+    .sh-cal i {
+      display: block;
+      aspect-ratio: 1;
+      border-radius: 4px;
+      background: #e3eaf7;
+    }
+
+    .sh-cal i.on {
+      background: var(--blue);
+      box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3);
+    }
+
+    .sh-foot {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-top: 29px;
+    }
+
+    .sh-sign {
+      width: 110px;
+      height: 40px;
+    }
+
+    .sh-seal {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border: 2px solid #ffc233;
+      border-radius: 50%;
+      background: #fff7db;
+    }
+
+    @keyframes lp-bob {
+      0%, 100% {
+        translate: 0 0;
+      }
+      50% {
+        translate: 0 -9px;
+      }
+    }
+
+    @keyframes lp-back-float {
+      0%, 100% {
+        transform: translate(-55%, -48%) rotate(-13deg) translateZ(-65px);
+      }
+      50% {
+        transform: translate(-55%, -51%) rotate(-11deg) translateZ(-65px);
+      }
+    }
+
+    @keyframes lp-mid-float {
+      0%, 100% {
+        transform: translate(-43%, -51%) rotate(10deg) translateZ(-25px);
+      }
+      50% {
+        transform: translate(-43%, -48%) rotate(12deg) translateZ(-25px);
+      }
+    }
+
+    @keyframes lp-front-float {
+      0%, 100% {
+        transform: translate(-52%, -49%) rotate(-2deg) translateZ(35px);
+      }
+      50% {
+        transform: translate(-52%, -51%) rotate(0deg) translateZ(35px);
+      }
+    }
 
     /* =====================================================================
        Right: form panel
@@ -267,7 +468,7 @@
     .lp-input:focus {
       border-color: var(--blue);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
-      outline: 2px solid transparent; /* stays visible in forced-colors mode */
+      outline: 2px solid transparent;
       outline-offset: 2px;
     }
 
@@ -375,7 +576,7 @@
     }
 
     /* =====================================================================
-       Small screens: brand panel becomes a header, the student scene is hidden
+       Small screens: brand panel becomes a header
        ===================================================================== */
 
     @media (max-width: 900px) {
@@ -384,6 +585,9 @@
       }
 
       .lp-brand {
+        position: relative;
+        height: auto;
+        min-height: 0;
         padding: 28px 24px;
       }
 
@@ -408,24 +612,16 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .student .head,
-      .lp-students .pupil,
+      .lp-sheet,
       .lp-form-wrap form,
       #otpCodeStep {
         animation: none;
       }
 
+      .lp-stack,
       .lp-btn {
         transition: none;
       }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .student .head,
-      .student .smile,
-      .student .rest-mouth,
-      .pupil { transition: none; }
-      .lp-scene.is-happy .student .head { transform: none; }
     }
   </style>
 </head>
