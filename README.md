@@ -1,4 +1,4 @@
-# CampusLink
+# HunarLoop
 
 AI-Powered Campus-to-Corporate Placement Management & Analytics Platform.
 
